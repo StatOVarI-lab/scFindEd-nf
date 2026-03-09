@@ -1,0 +1,8 @@
+# Nextflow
+work/
+.nextflow*
+.nf-test/
+.nextflow.cache/
+.nextflow.log*
+
+.DS_Store

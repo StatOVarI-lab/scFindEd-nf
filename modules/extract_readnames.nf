@@ -1,0 +1,24 @@
+process EXTRACT_READNAMES {
+
+    publishDir "${params.outdir}/readnames", mode: 'copy'
+
+    tag "$sample_id"
+
+    input:
+    tuple val(sample_id), path(input_fastq)
+
+    output:
+    tuple val(sample_id), path("${sample_id}.readnames.tsv${params.compress ? '.gz' : ''}")
+
+    script:
+    def outfile = "${sample_id}.readnames.tsv" + (params.compress ? ".gz" : "")
+    def compress_flag = params.compress ? "TRUE" : "FALSE"
+
+    script:
+    """
+    extract_readnames.R \
+        "${input_fastq}" \
+        "${sample_id}.readnames.tsv" \
+        "${compress_flag}"
+    """
+}
