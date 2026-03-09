@@ -7,7 +7,7 @@ The pipeline processes paired-end FASTQ files together with an amplicon design f
 ## Overview
 1. Build reference
 2. Create amplicon list
-3. Extract read names and barcodes
+3. Extract read names
 4. Align reads
 5. Generate QC stats
 6. Extract amplicon-level read information
@@ -106,6 +106,6 @@ results/
 The pipeline does NOT automatically generates execution reports. 
 
 ## Development Notes
-The pipeline is implemented in Nextflow DSL2 and modularised into reusable process modules.
+The pipeline is implemented in Nextflow DSL2.
 
 Intermediate files are stored in the `work/ `directory and final results are published to the directory specified by `--outdir`.
