@@ -77,6 +77,7 @@ Results are written to the directory specified by `--outdir`.
 
 Example structure:
 
+```
 results/
 │
 ├── align/
@@ -99,6 +100,7 @@ results/
     ├── reference.fa
     ├── reference.fa.fai
     └── reference.dict
+```
 
 ## Pipeline Reports
 The pipeline does NOT automatically generates execution reports. 
