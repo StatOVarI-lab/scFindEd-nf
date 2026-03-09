@@ -4,5 +4,6 @@ work/
 .nf-test/
 .nextflow.cache/
 .nextflow.log*
+tests/
 
 .DS_Store
