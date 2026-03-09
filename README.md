@@ -32,14 +32,14 @@ cd scFindEd-nf
 
 Example:
 
-'''
+```
 nextflow run main.nf -profile conda \
   --design tests/input/6915_design_summary_extended_information.csv \
   --reads "tests/input/*_R{1,2}_*.fastq" \
   --outdir results \
   --threads 10 \
   --compress false
-'''
+```
 
 ## Key parameters
 | Parameter   | Description                                   |
