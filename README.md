@@ -13,9 +13,9 @@ The pipeline processes barcoded paired-end FASTQ files together with an amplicon
 6. Extract amplicon-level read information
 
 ## Requirements
-Nextflow (>22 recommended)
-Java (required for Nextflow)
-Conda
+* Nextflow (>22 recommended)
+* Java (required for Nextflow)
+* Conda
 
 ## Getting Started
 ### 1. Install Nextflow and Conda
