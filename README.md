@@ -2,7 +2,7 @@
 
 A Nextflow pipeline for preprocessing targeted amplicon sequencing data. 
 
-The pipeline processes paired-end FASTQ files together with an amplicon design file to produce aligned reads and amplicon-level read summaries.
+The pipeline processes barcoded paired-end FASTQ files together with an amplicon design file to produce aligned reads and amplicon-level read summaries.
 
 ## Overview
 1. Build reference
