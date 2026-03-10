@@ -20,7 +20,7 @@ The pipeline processes barcoded paired-end FASTQ files together with an amplicon
 ## Getting Started
 ### 1. Install Nextflow and Conda
 
-Use: https://www.nextflow.io/docs/latest/install.html 
+See: https://www.nextflow.io/docs/latest/install.html 
 
 ### 2. Clone the repository
 ```
