@@ -40,12 +40,13 @@ nextflow run main.nf -profile conda \
   --threads 10 \
   --compress false
 ```
+Note: Test datasets are not included in the repository due to file size.
 
 ## Key parameters
 | Parameter   | Description                                   |
 |-------------|-----------------------------------------------|
 | `--design`  | Amplicon design CSV file                      |
-| `--reads`   | FASTQ file pattern for paired reads           |
+| `--reads`   | FASTQ file pattern for paired reads; assumes FASTQ are barcoded          |
 | `--outdir`  | Directory where results will be written       |
 | `--threads` | Number of threads available for tools         |
 | `--compress`| Whether TSV outputs should be gzipped         |
