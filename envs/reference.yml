@@ -1,7 +1,9 @@
-name: reference-build
+name: reference
 channels:
-  - conda-forge
   - bioconda
+  - conda-forge
+  - defaults
+
 dependencies:
   - r-base
   - seqkit

@@ -14,11 +14,10 @@ process EXTRACT_READNAMES {
     def outfile = "${sample_id}.readnames.tsv" + (params.compress ? ".gz" : "")
     def compress_flag = params.compress ? "TRUE" : "FALSE"
 
-    script:
     """
     extract_readnames.R \
         "${input_fastq}" \
-        "${sample_id}.readnames.tsv" \
+        "${outfile}" \
         "${compress_flag}"
     """
 }
