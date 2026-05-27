@@ -4,23 +4,96 @@ library(Biostrings)
 library(cli)
 library(readr)
 library(readxl)
+library(dplyr)
 
-get_amplicon_IDs <- function(
+infer_edit_blocks_df <- function(hdr_template, amplicon_seq, max_mismatch = 5) {
+  hdr <- Biostrings::DNAString(hdr_template)
+  amp <- Biostrings::DNAString(amplicon_seq)
+
+  hits <- Biostrings::matchPattern(
+    pattern = hdr,
+    subject = amp,
+    max.mismatch = max_mismatch,
+    fixed = FALSE
+  )
+  orientation <- "forward"
+  hdr_oriented <- hdr
+
+  if (length(hits) == 0) {
+    hdr_rc <- Biostrings::reverseComplement(hdr)
+    hits <- Biostrings::matchPattern(
+      pattern = hdr_rc,
+      subject = amp,
+      max.mismatch = max_mismatch,
+      fixed = FALSE
+    )
+    orientation <- "reverse_complement"
+    hdr_oriented <- hdr_rc
+  }
+
+  if (length(hits) == 0) {
+    return(tibble(
+      hdr_orientation = NA_character_,
+      block_index = NA_integer_,
+      start = NA_integer_,
+      length = NA_integer_,
+      ref = NA_character_,
+      change = NA_character_
+    ))
+  }
+
+  if (length(hits) > 1) {
+    cli::cli_abort("HDR template matches multiple locations in amplicon.")
+  }
+
+  hit_start <- start(hits)[1]
+  hit_end <- end(hits)[1]
+
+  amp_subseq <- Biostrings::subseq(amp, start = hit_start, end = hit_end)
+
+  amp_chars <- strsplit(as.character(amp_subseq), "")[[1]]
+  hdr_chars <- strsplit(as.character(hdr_oriented), "")[[1]]
+
+  mismatch_idx <- which(amp_chars != hdr_chars)
+
+  if (length(mismatch_idx) == 0) {
+    return(tibble(
+      hdr_orientation = orientation,
+      block_index = NA_integer_,
+      start = NA_integer_,
+      length = NA_integer_,
+      ref = NA_character_,
+      change = NA_character_
+    ))
+  }
+
+  block_id <- cumsum(c(1, diff(mismatch_idx) != 1))
+  blocks <- split(mismatch_idx, block_id)
+
+  tibble(
+  hdr_orientation = orientation,
+  block_index = seq_along(blocks),
+  start = vapply(blocks, function(idx) as.integer(hit_start + min(idx) - 1), integer(1)),
+  length = vapply(blocks, function(idx) as.integer(length(idx)), integer(1)),
+  ref = vapply(blocks, function(idx) paste0(amp_chars[idx], collapse = ""), character(1)),
+  change = vapply(blocks, function(idx) paste0(hdr_chars[idx], collapse = ""), character(1))
+)
+}
+
+get_amplicon_IDs_and_blocks <- function(
   SNP_info,
   design_summary,
   verbose = FALSE
 ) {
   if (verbose) {
     cli::cli_process_start(
-      msg = "Assigning correct AmpID for each SNP in SNP_info...",
-      msg_done = "Correct AmpID assigned for each SNP in SNP_info."
+      msg = "Assigning AmpIDs and mutation blocks...",
+      msg_done = "AmpIDs and mutation blocks assigned."
     )
   }
 
-  # Remove UTR barcode amplicon row from design summary file
   temp_design_summary <- design_summary[-nrow(design_summary), ]
 
-  # Basic input checks
   required_snp_cols <- c("HDR_template")
   missing_snp_cols <- setdiff(required_snp_cols, colnames(SNP_info))
   if (length(missing_snp_cols) > 0) {
@@ -31,7 +104,7 @@ get_amplicon_IDs <- function(
   }
 
   required_design_cols <- c("amplicon_seq", "AmpID")
-  missing_design_cols <- setdiff(required_design_cols, colnames(design_summary))
+  missing_design_cols <- setdiff(required_design_cols, colnames(temp_design_summary))
   if (length(missing_design_cols) > 0) {
     cli::cli_abort(c(
       "Missing required column(s) in design_summary:",
@@ -39,59 +112,72 @@ get_amplicon_IDs <- function(
     ))
   }
 
-  # Extract important information as vectors
-  HDR_templates <- SNP_info$HDR_template
   amp_sequences <- Biostrings::DNAStringSet(temp_design_summary$amplicon_seq)
   ref_AmpIDs <- temp_design_summary$AmpID
 
-  AmpID <- c()
+  out_list <- vector("list", length = nrow(SNP_info))
 
-  for (i in seq_along(HDR_templates)) {
-    HDR_template <- Biostrings::DNAString(HDR_templates[i])
+  for (i in seq_len(nrow(SNP_info))) {
+    hdr_template <- SNP_info$HDR_template[i]
+    hdr_dna <- Biostrings::DNAString(hdr_template)
 
-    # Check for matches with HDR_template
     matches <- Biostrings::vcountPattern(
-      HDR_template,
+      hdr_dna,
       amp_sequences,
       max.mismatch = 5,
       fixed = FALSE
     )
 
-    # Abort process if multiple matches found
-    if (sum(matches) > 1) {
-      cli::cli_abort("HDR_template {i} matches multiple amplicon sequences.")
-    }
-
-    # If no matches found, try instead with the reverse complement
-    if (sum(matches) == 0) {
+    if (sum(matches > 0) == 0) {
       matches <- Biostrings::vcountPattern(
-        Biostrings::reverseComplement(HDR_template),
+        Biostrings::reverseComplement(hdr_dna),
         amp_sequences,
         max.mismatch = 5,
         fixed = FALSE
       )
-
-      if (sum(matches) > 1) {
-        cli::cli_abort("HDR_template {i} matches multiple amplicon sequences.")
-      }
     }
 
-    if (sum(matches) == 0) {
-      AmpID <- c(AmpID, NA)
-    } else if (sum(matches) == 1) {
+    if (sum(matches > 0) > 1) {
+      cli::cli_abort("HDR_template {i} matches multiple amplicon sequences.")
+    }
+
+    if (sum(matches > 0) == 0) {
+      block_df <- tibble(
+        hdr_orientation = NA_character_,
+        block_index = NA_integer_,
+        start = NA_integer_,
+        length = NA_integer_,
+        ref = NA_character_,
+        change = NA_character_
+      )
+      AmpID <- NA_character_
+    } else {
       match_idx <- which(matches > 0)[1]
-      AmpID <- c(AmpID, ref_AmpIDs[match_idx])
+      AmpID <- ref_AmpIDs[match_idx]
+
+      block_df <- infer_edit_blocks_df(
+        hdr_template = hdr_template,
+        amplicon_seq = temp_design_summary$amplicon_seq[match_idx],
+        max_mismatch = 5
+      )
     }
+
+    snp_row <- SNP_info[i, , drop = FALSE]
+    snp_row$AmpID <- AmpID
+
+    out_list[[i]] <- bind_cols(
+      snp_row[rep(1, nrow(block_df)), , drop = FALSE],
+      block_df
+    )
   }
 
-  # Add AmpID as a column of SNP_info
-  SNP_info <- cbind(SNP_info[, 1:2], AmpID, SNP_info[, 3:ncol(SNP_info)])
+  out <- bind_rows(out_list)
 
   if (verbose) {
     cli::cli_process_done()
   }
 
-  return(SNP_info)
+  out
 }
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -111,10 +197,10 @@ verbose <- "--verbose" %in% args
 design_summary <- readr::read_csv(design_summary_file, show_col_types = FALSE)
 SNP_info <- readxl::read_excel(snp_info_file)
 
-SNP_info_with_AmpIDs <- get_amplicon_IDs(
+result <- get_amplicon_IDs_and_blocks(
   SNP_info = SNP_info,
   design_summary = design_summary,
   verbose = verbose
 )
 
-readr::write_csv(SNP_info_with_AmpIDs, output_csv)
+readr::write_csv(result, output_csv)

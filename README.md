@@ -34,11 +34,11 @@ Example:
 
 ```
 nextflow run main.nf -profile conda \
-  --design tests/input/6915_design_summary_extended_information.csv \
-  --reads "tests/input/*_R{1,2}_*.fastq" \
+  --design tests/input/9824-design-summary.csv \
+  --reads 'tests/input/*_R{1,2}_*.fastq' \
+  --snp_info tests/input/20260310_Pilot1_SNP_final.xlsx \
   --outdir results \
-  --threads 10 \
-  --compress false
+  -resume
 ```
 Note: Test datasets are not included in the repository due to file size.
 

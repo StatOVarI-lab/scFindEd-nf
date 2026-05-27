@@ -8,3 +8,4 @@ dependencies:
   - r-cli
   - r-readr
   - r-readxl
+  - r-dplyr

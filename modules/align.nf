@@ -15,12 +15,14 @@ process ALIGN_BWA_MEM {
     tuple val(sample_id), path("${sample_id}.bam"), path("${sample_id}.bam.bai")
 
   script:
-  """
-  set -euo pipefail
+"""
+set -euo pipefail
 
-  bwa mem -t ${task.cpus} ${ref_fa} ${r1} ${r2} \
-    | samtools sort -@ ${task.cpus} -o ${sample_id}.bam
+bwa mem -t ${task.cpus} ${ref_fa} ${r1} ${r2} \\
+  | samtools sort -@ ${task.cpus} -o ${sample_id}.sorted.bam
 
-  samtools index ${sample_id}.bam
-  """
+samtools calmd -b ${sample_id}.sorted.bam ${ref_fa} > ${sample_id}.bam
+
+samtools index ${sample_id}.bam
+"""
 }

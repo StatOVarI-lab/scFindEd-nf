@@ -1,0 +1,10 @@
+name: read_mutations
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base
+  - r-readr
+  - r-dplyr
+  - r-stringr
+  - r-purrr
