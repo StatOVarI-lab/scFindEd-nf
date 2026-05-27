@@ -90,15 +90,31 @@ results/
 │
 ├── amplicon_tsv/
 │   └── sample_ampliconID.tsv
+│   └── sample_ampliconID.tsv
+│   └── sample_ampliconID.tsv
+│   └── sample_ampliconID.tsv
 │
 ├── readnames/
 │   └── sample.readnames.tsv
 │ 
 ├── design/
+│   └── 20260310_Pilot1_SNP_final.with_AmpIDs.csv
+│   └── 9824-design-summary.joined.csv
+│   └── 6915_design_summary.joined.csv
+│   └── 9824-design-summary.with_amplicon_seq.csv
+│   └── 6915_design_summary.with_amplicon_seq.csv
+│   └── old_pilot_SNPs.with_AmpIDs.csv
 │
 ├── fragment_mutations/
+│   └── sample_name/
+│           └── amplID.fragment_mutations.tsv
+│           └── amplID.fragment_mutations.tsv
+│           └── amplID.fragment_mutations.tsv
+│           └── amplID.fragment_mutations.tsv
 │
 ├── qc/
+│    └── sample.flagstat.txt
+│    └── sample.idxstats.txt
 │   
 │
 └── reference_amplicon/
