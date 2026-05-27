@@ -15,24 +15,24 @@ process MAKE_AMPLICON_LIST {
   set -euo pipefail
 
   Rscript -e '
-    df <- read.csv("${design_csv}", header=TRUE, fill=TRUE, stringsAsFactors=FALSE, check.names=FALSE)
+  df <- read.csv("${design_csv}", header=TRUE, fill=TRUE, stringsAsFactors=FALSE, check.names=FALSE)
 
-    if (!("AmpID" %in% names(df))) stop("Column AmpID not found")
-    if (!("Amplicon sequence" %in% names(df))) stop("Column Amplicon sequence not found")
+  if (!("AmpID" %in% names(df))) stop("Column AmpID not found")
+  if (!("amplicon_seq" %in% names(df))) stop("Column amplicon_seq not found")
 
-    df\$AmpID <- trimws(df\$AmpID)
-    df[["Amplicon sequence"]] <- trimws(df[["Amplicon sequence"]])
+  df\$AmpID <- trimws(df\$AmpID)
+  df[["amplicon_seq"]] <- trimws(df[["amplicon_seq"]])
 
-    df <- df[
-      !is.na(df\$AmpID) &
-      df\$AmpID != "" &
-      !is.na(df[["Amplicon sequence"]]) &
-      df[["Amplicon sequence"]] != "" &
-      df[["Amplicon sequence"]] != "NA",
-    ]
+  df <- df[
+    !is.na(df\$AmpID) &
+    df\$AmpID != "" &
+    !is.na(df[["amplicon_seq"]]) &
+    df[["amplicon_seq"]] != "" &
+    df[["amplicon_seq"]] != "NA",
+  ]
 
-    amps <- unique(df\$AmpID)
-    writeLines(amps, "amplicon_list.txt")
-  '
+  amps <- unique(df\$AmpID)
+  writeLines(amps, "amplicon_list.txt")
+'
   """
 }

@@ -1,0 +1,11 @@
+name: get_amplicon_sequence
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base
+  - r-httr
+  - r-jsonlite
+  - r-cli
+  - r-stringr
+  - r-readr

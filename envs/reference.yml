@@ -1,9 +1,14 @@
-name: reference-build
+name: reference
 channels:
-  - conda-forge
   - bioconda
+  - conda-forge
+  - defaults
+
 dependencies:
   - r-base
+  - r-readr
+  - r-dplyr
+  - r-cli
   - seqkit
   - bwa
   - samtools

@@ -2,7 +2,6 @@ process BUILD_REFERENCE {
 
 tag "${design_csv.baseName}"
   publishDir "${params.outdir}/reference_amplicon", mode: 'copy'
-
   conda "$projectDir/envs/reference.yml"
 
 input:
@@ -17,6 +16,12 @@ output:
 script:
 """
 set -euo pipefail
+
+which Rscript
+which seqkit
+which bwa
+which samtools
+which picard
 
 Rscript $projectDir/bin/reference_from_designSummary.R ${design_csv}
 
