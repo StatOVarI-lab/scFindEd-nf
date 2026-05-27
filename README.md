@@ -93,6 +93,10 @@ results/
 │
 ├── readnames/
 │   └── sample.readnames.tsv
+│ 
+├── design/
+│
+├── fragment_mutations/
 │
 ├── qc/
 │   
