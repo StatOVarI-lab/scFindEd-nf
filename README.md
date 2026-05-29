@@ -157,47 +157,95 @@ The mutation-evidence step starts from grouped fragment patterns, where each row
    Import the grouped fragment-pattern table generated from the aligned BAM files.
 
 2. **Filter alignments using SAM flags**  
-   Decode the SAM `FLAG` field and retain only:
+   The SAM `FLAG` field is a single integer that stores multiple alignment properties for each read. Each property has a specific value, and the final `FLAG` is the sum of all properties that apply to that read.
+
+   [Decode](https://broadinstitute.github.io/picard/explain-flags.html) this value using bitwise operations ([see page 7](https://samtools.github.io/hts-specs/SAMv1.pdf)) to identify which properties are present.
+
+   The following flags are retained:
    - paired reads (`FLAG & 1`)
    - properly paired reads (`FLAG & 2`)
-   - primary alignments
-   
-   Remove:
+   - R1 reads (`FLAG & 64`)
+   - R2 reads (`FLAG & 128`)
+
+   The following flags are removed:
    - secondary alignments (`FLAG & 256`)
    - supplementary alignments (`FLAG & 2048`)
-   
-   Incomplete pairs (`R1_only` and `R2_only`) are separated by requiring both R1 and R2 to be present after pairing.
+
+   For example:
+   - `99 = 1 + 2 + 32 + 64`, meaning paired, properly paired, mate on reverse strand, and R1
+   - `147 = 1 + 2 + 16 + 128`, meaning paired, properly paired, read on reverse strand, and R2
+
+   After decoding, reads are separated into R1 and R2 groups and paired using:
+   - `read_name`
+   - `cell_barcode`
+   - `amp_id`
+
+   Incomplete pairs (`R1_only` and `R2_only`) could be discarded if both R1 and R2 are required to be present after pairing.
 
 3. **Filter rows by NM values**  
    Separate rows where `r1_nm > 0` or `r2_nm > 0`, because rows with `NM = 0` for both reads have no mismatches to extract.
 
 4. **Parse CIGAR strings**  
-   The `CIGAR` string is split into operation lengths and operation types, such as `96M`, `38S60M`, or `51M1D99M`. This is used to track how read positions relate to amplicon-reference positions, including soft clipping, insertions and deletions.
+   The `CIGAR` string can be split into operation lengths and operation types, such as `96M`, `38S60M`, or `51M1D99M`. This can be used to track how read positions relate to amplicon-reference positions, including soft clipping, insertions and deletions.
 
 5. **Parse MD strings**  
-   The `MD` string is used to identify mismatch positions and reference bases. For example, `73T22` means 73 matching bases, then a mismatch where the reference base is `T`, followed by 22 matching bases.
+   The `MD` string can be used to identify mismatch positions and reference bases. For example, `73T22` means 73 matching bases, then a mismatch where the reference base is `T`, followed by 22 matching bases.
 
 6. **Map mismatch to amplicon position**  
-   The mismatch position from `MD` is converted into an amplicon coordinate using the read alignment start position, for example `amplicon_pos = r1_pos + ref_index - 1`.
+   The mismatch position identified from the `MD` string can be converted into an amplicon coordinate using the read alignment start position.
+
+   For example:
+
+   ```text
+   r1_pos = 5
+   r1_md  = 73T22
+   ```
+
+   means:
+   - the read alignment starts at amplicon position `5`
+   - the first `73` aligned bases match the reference
+   - the next aligned base is a mismatch where the reference base is `T`
+
+   Therefore, the mismatch occurs after `73` matching aligned reference positions:
+
+   ```text
+   ref_index = 74
+   ```
+
+   where `ref_index` represents the mismatch offset within the aligned reference sequence.
+
+   The final amplicon coordinate is then calculated as:
+
+   ```text
+   amplicon_pos = r1_pos + ref_index - 1
+   ```
+
+   giving:
+
+   ```text
+   amplicon_pos = 5 + 74 - 1 = 78
+   ```
+
+   meaning the mismatch occurs at amplicon position `78`.
 
 7. **Extract observed read base**  
-   The `CIGAR` string is used to map the mismatch reference position back to the correct position in the read sequence. The observed base is then extracted from `r1_seq` or `r2_seq`.
+   The `CIGAR` string can be used to map the mismatch reference position back to the correct position in the read sequence. The observed base can then be extracted from `r1_seq` or `r2_seq`.
 
 8. **Create mutation call**  
-   The mutation is reported as `ref_base > read_base`, for example `T>A`.
+   The mutation can be reported as `ref_base > read_base`, for example `T>A`.
 
 9. **Compare with mate read**  
-   For each mutation detected in R1, the script checks what base R2 has at the same amplicon position, and vice versa.
+   For each mutation detected in R1, downstream analysis could check what base R2 has at the same amplicon position, and vice versa.
 
 10. **Classify paired-read support**  
-   Each mutation is classified as:
+   Each mutation can be classified as:
    - `R1_nonoverlap_only`: mutation detected in R1, but R2 does not cover the position
    - `R2_nonoverlap_only`: mutation detected in R2, but R1 does not cover the position
    - `R1_R2_agree`: both reads cover the position and show the same mutated base
    - `R1_R2_disagree`: both reads cover the position but show different bases
 
 11. **Propagate fragment support**  
-   The `n_fragments` value is carried forward so downstream workflows can weight each mutation by the number of identical fragments supporting that evidence pattern.
+   The `n_fragments` value can be carried forward so downstream workflows can weight each mutation by the number of identical fragments supporting that evidence pattern.
 
 ## Pipeline Reports
 The pipeline does NOT automatically generates execution reports. 
