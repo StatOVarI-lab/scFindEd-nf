@@ -1,5 +1,6 @@
 process JOIN_DESIGN_AND_SNP {
     tag "${design_summary.baseName}"
+    conda "$projectDir/envs/reference.yml"
     publishDir "${params.outdir}/design", mode: 'copy'
 
     input:

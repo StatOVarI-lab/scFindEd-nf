@@ -8,6 +8,7 @@ dependencies:
   - r-base
   - r-readr
   - r-dplyr
+  - r-cli
   - seqkit
   - bwa
   - samtools
