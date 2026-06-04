@@ -1,7 +1,6 @@
 #!/usr/bin/env Rscript
 
 library(Biostrings)
-library(cli)
 library(readr)
 library(readxl)
 library(dplyr)
@@ -16,6 +15,7 @@ infer_edit_blocks_df <- function(hdr_template, amplicon_seq, max_mismatch = 5) {
     max.mismatch = max_mismatch,
     fixed = FALSE
   )
+
   orientation <- "forward"
   hdr_oriented <- hdr
 
@@ -43,7 +43,10 @@ infer_edit_blocks_df <- function(hdr_template, amplicon_seq, max_mismatch = 5) {
   }
 
   if (length(hits) > 1) {
-    cli::cli_abort("HDR template matches multiple locations in amplicon.")
+    stop(
+      "HDR template matches multiple locations in amplicon.",
+      call. = FALSE
+    )
   }
 
   hit_start <- start(hits)[1]
@@ -71,13 +74,29 @@ infer_edit_blocks_df <- function(hdr_template, amplicon_seq, max_mismatch = 5) {
   blocks <- split(mismatch_idx, block_id)
 
   tibble(
-  hdr_orientation = orientation,
-  block_index = seq_along(blocks),
-  start = vapply(blocks, function(idx) as.integer(hit_start + min(idx) - 1), integer(1)),
-  length = vapply(blocks, function(idx) as.integer(length(idx)), integer(1)),
-  ref = vapply(blocks, function(idx) paste0(amp_chars[idx], collapse = ""), character(1)),
-  change = vapply(blocks, function(idx) paste0(hdr_chars[idx], collapse = ""), character(1))
-)
+    hdr_orientation = orientation,
+    block_index = seq_along(blocks),
+    start = vapply(
+      blocks,
+      function(idx) as.integer(hit_start + min(idx) - 1),
+      integer(1)
+    ),
+    length = vapply(
+      blocks,
+      function(idx) as.integer(length(idx)),
+      integer(1)
+    ),
+    ref = vapply(
+      blocks,
+      function(idx) paste0(amp_chars[idx], collapse = ""),
+      character(1)
+    ),
+    change = vapply(
+      blocks,
+      function(idx) paste0(hdr_chars[idx], collapse = ""),
+      character(1)
+    )
+  )
 }
 
 get_amplicon_IDs_and_blocks <- function(
@@ -86,30 +105,35 @@ get_amplicon_IDs_and_blocks <- function(
   verbose = FALSE
 ) {
   if (verbose) {
-    cli::cli_process_start(
-      msg = "Assigning AmpIDs and mutation blocks...",
-      msg_done = "AmpIDs and mutation blocks assigned."
-    )
+    message("Assigning AmpIDs and mutation blocks...")
   }
 
   temp_design_summary <- design_summary[-nrow(design_summary), ]
 
   required_snp_cols <- c("HDR_template")
   missing_snp_cols <- setdiff(required_snp_cols, colnames(SNP_info))
+
   if (length(missing_snp_cols) > 0) {
-    cli::cli_abort(c(
-      "Missing required column(s) in SNP_info:",
-      "x" = paste(missing_snp_cols, collapse = ", ")
-    ))
+    stop(
+      paste(
+        "Missing required column(s) in SNP_info:",
+        paste(missing_snp_cols, collapse = ", ")
+      ),
+      call. = FALSE
+    )
   }
 
   required_design_cols <- c("amplicon_seq", "AmpID")
   missing_design_cols <- setdiff(required_design_cols, colnames(temp_design_summary))
+
   if (length(missing_design_cols) > 0) {
-    cli::cli_abort(c(
-      "Missing required column(s) in design_summary:",
-      "x" = paste(missing_design_cols, collapse = ", ")
-    ))
+    stop(
+      paste(
+        "Missing required column(s) in design_summary:",
+        paste(missing_design_cols, collapse = ", ")
+      ),
+      call. = FALSE
+    )
   }
 
   amp_sequences <- Biostrings::DNAStringSet(temp_design_summary$amplicon_seq)
@@ -138,7 +162,10 @@ get_amplicon_IDs_and_blocks <- function(
     }
 
     if (sum(matches > 0) > 1) {
-      cli::cli_abort("HDR_template {i} matches multiple amplicon sequences.")
+      stop(
+        sprintf("HDR_template %s matches multiple amplicon sequences.", i),
+        call. = FALSE
+      )
     }
 
     if (sum(matches > 0) == 0) {
@@ -174,7 +201,7 @@ get_amplicon_IDs_and_blocks <- function(
   out <- bind_rows(out_list)
 
   if (verbose) {
-    cli::cli_process_done()
+    message("AmpIDs and mutation blocks assigned.")
   }
 
   out
