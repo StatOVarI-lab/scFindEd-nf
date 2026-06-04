@@ -6,6 +6,5 @@ dependencies:
   - r-base
   - r-httr
   - r-jsonlite
-  - r-cli
   - r-stringr
   - r-readr

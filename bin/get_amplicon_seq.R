@@ -2,7 +2,6 @@
 
 library(httr)
 library(jsonlite)
-library(cli)
 library(stringr)
 library(readr)
 
@@ -10,16 +9,15 @@ get_amplicon_sequences <- function(
   design_summary,
   verbose = FALSE
 ) {
-  if (verbose) cli::cli_process_start(
-    msg = "Extracting amplicon sequences from Ensembl...",
-    msg_done = "Amplicon sequences extracted and appended to design_summary."
-  )
+  if (verbose) {
+    message("Extracting amplicon sequences from Ensembl...")
+  }
 
   temp_design_summary <- design_summary[-nrow(design_summary), ]
 
   # Check that only one reference genome is listed in design_summary
   if (length(unique(temp_design_summary$Ref_Genome)) > 1) {
-    cli::cli_abort("Multiple reference genomes provided in design_summary.")
+    stop("Multiple reference genomes provided in design_summary.", call. = FALSE)
   } else {
     ref_genome <- temp_design_summary$Ref_Genome[1]
   }
@@ -30,7 +28,7 @@ get_amplicon_sequences <- function(
   } else if (ref_genome %in% c("hg19", "GRCh37", "hg19_GR")) {
     server <- "https://grch37.rest.ensembl.org"
   } else {
-    cli::cli_abort("Unsupported reference genome provided.")
+    stop("Unsupported reference genome provided.", call. = FALSE)
   }
 
   ext <- "/sequence/region/human"
@@ -55,14 +53,20 @@ get_amplicon_sequences <- function(
 
   # Parse results
   httr::stop_for_status(response)
-  results <- jsonlite::fromJSON(httr::content(response, as = "text", encoding = "UTF-8"))
+
+  results <- jsonlite::fromJSON(
+    httr::content(response, as = "text", encoding = "UTF-8")
+  )
+
   output_sequences <- results$seq
 
   # Overwrite design_summary$amplicon_seq with Ensembl-extracted sequences
   temp_design_summary$amplicon_seq <- output_sequences
   temp_design_summary[nrow(design_summary), ] <- design_summary[nrow(design_summary), ]
 
-  if (verbose) cli::cli_process_done()
+  if (verbose) {
+    message("Amplicon sequences extracted and appended to design_summary.")
+  }
 
   return(temp_design_summary)
 }
@@ -70,7 +74,10 @@ get_amplicon_sequences <- function(
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) < 2) {
-  stop("Usage: get_amplicon_sequence.R <input_csv> <output_csv> [--verbose]", call. = FALSE)
+  stop(
+    "Usage: get_amplicon_sequence.R <input_csv> <output_csv> [--verbose]",
+    call. = FALSE
+  )
 }
 
 input_csv  <- args[1]
