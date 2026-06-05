@@ -37,8 +37,8 @@ nextflow run main.nf -profile conda \
   --design tests/input/9824-design-summary.csv \
   --reads 'tests/input/*_R{1,2}_*.fastq' \
   --snp_info tests/input/20260310_Pilot1_SNP_final.xlsx \
-  --outdir results \
-  -resume
+  --utr_amplicon AMPL902654 \
+  --outdir results
 ```
 Note: Test datasets are not included in the repository due to file size.
 
@@ -47,9 +47,13 @@ Note: Test datasets are not included in the repository due to file size.
 |-------------|-----------------------------------------------|
 | `--design`  | Amplicon design CSV file                      |
 | `--reads`   | FASTQ file pattern for paired reads; assumes FASTQ are barcoded          |
+| `--snp_info`| Excel file describing HDR templates and associated SNPs         |
+| `--utr_amplicon`| AmpID corresponding to the UTR barcode amplicon. This amplicon is included in amplicon_tsv outputs but excluded from mutation extraction. gzipped         |
 | `--outdir`  | Directory where results will be written       |
 | `--threads` | Number of threads available for tools         |
 | `--compress`| Whether TSV outputs should be gzipped         |
+
+
 
 ## Required inputs
 

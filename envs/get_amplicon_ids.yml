@@ -5,7 +5,6 @@ channels:
 dependencies:
   - r-base
   - bioconductor-biostrings
-  - r-cli
   - r-readr
   - r-readxl
   - r-dplyr
