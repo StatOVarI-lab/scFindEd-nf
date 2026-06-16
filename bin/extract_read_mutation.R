@@ -43,6 +43,7 @@ empty_out <- tibble(
   r1_nm = integer(),
   r1_md = character(),
   r1_seq = character(),
+  r1_qual = character(),
   r2_pos = integer(),
   r2_mapq = integer(),
   r2_cigar = character(),
@@ -50,6 +51,7 @@ empty_out <- tibble(
   r2_nm = integer(),
   r2_md = character(),
   r2_seq = character(),
+  r2_qual = character(),
   n_fragments = integer()
 )
 
@@ -95,7 +97,8 @@ r1 <- amp_grouped_input %>%
     r1_flag = flag,
     r1_nm = nm,
     r1_md = md,
-    r1_seq = seq
+    r1_seq = seq,
+    r1_qual = qual
   )
 
 r2 <- amp_grouped_input %>%
@@ -110,7 +113,8 @@ r2 <- amp_grouped_input %>%
     r2_flag = flag,
     r2_nm = nm,
     r2_md = md,
-    r2_seq = seq
+    r2_seq = seq,
+    r2_qual = qual
   )
 
 paired <- inner_join(
@@ -139,13 +143,15 @@ out <- paired %>%
     r1_nm,
     r1_md,
     r1_seq,
+    r1_qual,
     r2_pos,
     r2_mapq,
     r2_cigar,
     r2_flag,
     r2_nm,
     r2_md,
-    r2_seq
+    r2_seq,
+    r2_qual
   ) %>%
   summarise(
     n_fragments = n(),

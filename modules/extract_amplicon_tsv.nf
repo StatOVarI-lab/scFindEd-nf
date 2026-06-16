@@ -3,8 +3,7 @@ process EXTRACT_AMPLICON_TSV {
   tag "${sample_id}:${amp_id}"
   publishDir "${params.outdir}/amplicon_tsv/${sample_id}", mode: 'copy'
 
-  conda "$projectDir/envs/qc.yml"   // needs samtools (and gzip). 
-  // reuse QC env
+  conda "$projectDir/envs/qc.yml"
   cpus 1
 
   input:
@@ -18,13 +17,13 @@ process EXTRACT_AMPLICON_TSV {
 set -euo pipefail
 
 # Pull alignments mapping to this amplicon contig and extract:
-# QNAME, RNAME, POS, MAPQ, CIGAR, FLAG, NM, MD, SEQ
+# QNAME, RNAME, POS, MAPQ, CIGAR, FLAG, NM, MD, SEQ, QUAL
 #
 # -F 4 excludes unmapped reads.
 # NM and MD are expected to be present because ALIGN_BWA_MEM now runs samtools calmd.
 
 {
-  echo -e "read_name\\tamp_id\\tpos\\tmapq\\tcigar\\tflag\\tnm\\tmd\\tseq"
+  echo -e "read_name\\tamp_id\\tpos\\tmapq\\tcigar\\tflag\\tnm\\tmd\\tseq\\tqual"
 
   samtools view -F 4 ${bam} ${amp_id} \\
     | awk 'BEGIN {OFS="\\t"}
@@ -44,11 +43,10 @@ set -euo pipefail
           }
         }
 
-        print \$1, \$3, \$4, \$5, \$6, \$2, nm, md, \$10
+        print \$1, \$3, \$4, \$5, \$6, \$2, nm, md, \$10, \$11
       }'
 } | gzip -c > ${sample_id}.${amp_id}.data.tsv.gz
 
-# Ensure file exists even if there were zero reads
 test -f ${sample_id}.${amp_id}.data.tsv.gz
 """
 }
