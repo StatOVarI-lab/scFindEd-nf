@@ -211,7 +211,7 @@ args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) < 3) {
   stop(
-    "Usage: get_amplicon_ids.R <snp_info_xlsx> <design_summary_csv> <output_csv> [--verbose]",
+    "Usage: get_amplicon_ids.R <snp_info_csv> <design_summary_csv> <output_csv> [--verbose]",
     call. = FALSE
   )
 }
@@ -222,7 +222,7 @@ output_csv <- args[3]
 verbose <- "--verbose" %in% args
 
 design_summary <- readr::read_csv(design_summary_file, show_col_types = FALSE)
-SNP_info <- readxl::read_excel(snp_info_file)
+SNP_info <- readr::read_csv(snp_info_file, show_col_types = FALSE)
 
 result <- get_amplicon_IDs_and_blocks(
   SNP_info = SNP_info,
