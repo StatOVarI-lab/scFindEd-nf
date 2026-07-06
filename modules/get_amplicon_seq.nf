@@ -11,7 +11,7 @@ process GET_AMPLICON_SEQ {
 
     script:
     """
-    get_amplicon_seq.R \
+    Rscript ${projectDir}/bin/get_amplicon_seq.R \
         ${design_summary} \
         ${design_summary.simpleName}.with_amplicon_seq.csv \
         --verbose

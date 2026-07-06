@@ -15,7 +15,7 @@ process EXTRACT_READNAMES {
     def compress_flag = params.compress ? "TRUE" : "FALSE"
 
     """
-    extract_readnames.R \
+    Rscript ${projectDir}/bin/extract_readnames.R \
         "${input_fastq}" \
         "${outfile}" \
         "${compress_flag}"

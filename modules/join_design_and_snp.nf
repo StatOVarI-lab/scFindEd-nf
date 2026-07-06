@@ -12,7 +12,7 @@ process JOIN_DESIGN_AND_SNP {
 
     script:
     """
-    join_design_and_snp.R \
+    Rscript ${projectDir}/bin/join_design_and_snp.R \
         ${design_summary} \
         ${snp_info} \
         ${design_summary.simpleName}.joined.csv

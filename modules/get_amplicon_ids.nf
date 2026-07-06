@@ -13,7 +13,7 @@ process GET_AMPLICON_IDS {
 
     script:
     """
-    get_amplicon_ids.R \
+    Rscript ${projectDir}/bin/get_amplicon_ids.R \
         ${snp_info} \
         ${design_summary} \
         ${snp_info.simpleName}.with_AmpIDs.csv \
