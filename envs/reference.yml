@@ -2,8 +2,7 @@ name: reference
 channels:
   - bioconda
   - conda-forge
-  - defaults
-
+  - nodefaults
 dependencies:
   - r-base
   - r-readr

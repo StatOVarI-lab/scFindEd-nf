@@ -2,6 +2,7 @@ name: read_mutations
 channels:
   - conda-forge
   - bioconda
+  - nodefaults
 dependencies:
   - r-base
   - r-readr
