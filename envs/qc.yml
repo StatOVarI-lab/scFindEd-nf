@@ -5,4 +5,4 @@ channels:
   - nodefaults
 dependencies:
   - samtools
-  - r-base
+  - r-base=4.3

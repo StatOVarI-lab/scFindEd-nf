@@ -4,7 +4,7 @@ channels:
   - bioconda
   - nodefaults
 dependencies:
-  - r-base
+  - r-base=4.3
   - r-readr
   - r-dplyr
   - r-stringr
