@@ -21,8 +21,8 @@ set -euo pipefail
 bwa mem -t ${task.cpus} ${ref_fa} ${r1} ${r2} \\
   | samtools sort -@ ${task.cpus} -o ${sample_id}.sorted.bam
 
-samtools calmd -b ${sample_id}.sorted.bam ${ref_fa} > ${sample_id}.bam
+samtools calmd -@ ${task.cpus} -b ${sample_id}.sorted.bam ${ref_fa} > ${sample_id}.bam
 
-samtools index ${sample_id}.bam
+samtools index -@ ${task.cpus} ${sample_id}.bam
 """
 }
