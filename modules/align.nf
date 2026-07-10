@@ -19,7 +19,7 @@ process ALIGN_BWA_MEM {
 set -euo pipefail
 
 bwa mem -t ${task.cpus} ${ref_fa} ${r1} ${r2} \
-  | samtools view -@ ${task.cpus} -b -F 4 - \
+  | samtools view -@ ${task.cpus} -b -F 2308 -q ${params.min_mapq} - \
   | samtools sort -@ ${task.cpus} -m 1G -o ${sample_id}.sorted.bam
 
 samtools calmd -@ ${task.cpus} -b ${sample_id}.sorted.bam ${ref_fa} > ${sample_id}.bam

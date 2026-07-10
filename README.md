@@ -52,7 +52,7 @@ Note: Test datasets are not included in the repository due to file size.
 | `--outdir`  | Directory where results will be written       |
 | `--threads` | Number of threads available for tools         |
 | `--compress`| Whether TSV outputs should be gzipped         |
-
+| `--min_mapq`| Default MAPQ: 20; adjust as needed         |
 
 
 ## Required inputs
@@ -126,6 +126,20 @@ results/
     ├── reference.fa.fai
     └── reference.dict
 ```
+
+### Alignment filtering
+
+After alignment with `bwa mem`, alignments are filtered before downstream processing to retain only primary mapped reads. The following alignment types are excluded:
+
+* Unmapped reads (FLAG 4)
+* Secondary alignments (FLAG 256)
+* Supplementary alignments (FLAG 2048)
+
+Filtering is performed using:
+
+`samtools view -b -F 2308`
+
+A default MAPQ filter of 20 is applied after alignment. This can be adjusted with `--min_mapq`, or disabled by setting `--min_mapq 0`. Disabling the MAPQ filter may be useful for highly similar amplicons where reads may be correctly aligned but assigned lower mapping quality.
 
 ### Mutation evidence output
 The Nextflow workflow does not perform final mutation summarisation. Instead, it produced intermediate mutation-evidence files that can be used by downstream analysis workflows such as scFindEd R package. 
