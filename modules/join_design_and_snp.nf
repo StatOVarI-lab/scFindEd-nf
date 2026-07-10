@@ -8,13 +8,13 @@ process JOIN_DESIGN_AND_SNP {
     path snp_info
 
     output:
-    path "${design_summary.simpleName}.joined.csv"
+    path "${design_summary.simpleName}_joined.csv"
 
     script:
     """
     Rscript ${projectDir}/bin/join_design_and_snp.R \
         ${design_summary} \
         ${snp_info} \
-        ${design_summary.simpleName}.joined.csv
+        ${design_summary.simpleName}_joined.csv
     """
 }

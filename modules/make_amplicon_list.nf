@@ -1,7 +1,7 @@
 process MAKE_AMPLICON_LIST {
 
   tag "${design_csv.baseName}"
-  publishDir "${params.outdir}/amplicons", mode: 'copy'
+  // publishDir "${params.outdir}/amplicons", mode: 'copy'
   conda "$projectDir/envs/reference.yml"
 
   input:

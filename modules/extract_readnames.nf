@@ -1,6 +1,6 @@
 process EXTRACT_READNAMES {
 
-    publishDir "${params.outdir}/readnames", mode: 'copy'
+    // publishDir "${params.outdir}/readnames", mode: 'copy'
 
     tag "$sample_id"
 

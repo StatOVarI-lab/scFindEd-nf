@@ -34,28 +34,70 @@ Example:
 
 ```
 nextflow run main.nf -profile conda \
-  --design tests/input/9824-design-summary.csv \
-  --reads 'tests/input/*_R{1,2}_*.fastq' \
-  --snp_info tests/input/20260310_Pilot1_SNP_final.xlsx \
-  --utr_amplicon AMPL902654 \
-  --outdir results
+  --design /path/to/design_summary.csv \
+  --reads '/path/to/fastq/*_R{1,2}_*.fastq.gz' \
+  --snp_info /path/to/info_SNPs.csv \
+  --utr_amplicon AMPLxxxxxxx \
+  --outdir /path/to/results \
+  --threads 32 \
+  -work-dir path/to/work_folder \
 ```
+
 Note: Test datasets are not included in the repository due to file size.
 
-## Key parameters
+## Example bash script for HPC
+
+The exact submission script depends on your HPC scheduler (e.g. LSF, Slurm, PBS or SGE). An example LSF submission script is shown below.
+
+```
+#!/bin/bash
+#BSUB -J scfinded
+#BSUB -o scfinded.%J.out
+#BSUB -e scfinded.%J.err
+#BSUB -q normal
+#BSUB -n 32                 # ask for 32 CPUs
+#BSUB -W 0X:00              # maximum runtime: X hours
+#BSUB -G xxxxx
+#BSUB -R "select[mem>128000] rusage[mem=128000]"
+#BSUB -M 128000
+
+# stop the script if a command fails, if a variable is missing, or if a piped command fails.
+set -euo pipefail
+
+module load nextflow
+module load conda
+
+cd /path/to/scFindEd-nf
+
+nextflow run main.nf -profile conda \
+  --design /path/to/design_summary.csv \
+  --reads '/path/to/fastq/*_R{1,2}_*.fastq.gz' \
+  --snp_info /path/to/info_SNPs.csv \
+  --utr_amplicon AMPLxxxxxxx \
+  --outdir /path/to/results \
+  --threads 32 \
+  -work-dir path/to/work_folder \
+
+```
+
+## Parameters
 | Parameter   | Description                                   |
 |-------------|-----------------------------------------------|
-| `--design`  | Amplicon design CSV file                      |
-| `--reads`   | FASTQ file pattern for paired reads; assumes FASTQ are barcoded          |
-| `--snp_info`| Excel file describing HDR templates and associated SNPs         |
-| `--utr_amplicon`| AmpID corresponding to the UTR barcode amplicon. This amplicon is included in amplicon_tsv outputs but excluded from mutation extraction. gzipped         |
+| `--design`  | Amplicon design CSV file.                      |
+| `--reads`   | Paired-end FASTQ file pattern. Input FASTQ files are expected to contain cell barcodes in the read names.         |
+| `--snp_info`| CSV file describing the SNPs to analyse, including HDR template sequences.         |
+| `--utr_amplicon`| AmpID corresponding to the UTR barcode amplicon.       |
 | `--outdir`  | Directory where results will be written       |
-| `--threads` | Number of threads available for tools         |
-| `--compress`| Whether TSV outputs should be gzipped         |
-| `--min_mapq`| Default MAPQ: 20; adjust as needed         |
+| `--threads` | Number of CPU threads allocated to multithreaded processes (`default: 10`).         |
+| `--compress`| Compress TSV outputs using gzip (`true` by default).        |
+| `--min_mapq`| Minimum mapping quality retained after alignment (`default: 20`). Set to `0` to disable MAPQ filtering.         |
 
 
 ## Required inputs
+
+1. Design Summary (`--design`)
+2. SNP information (`--snp_info`)
+3. FASTQ files (`--reads`)
 
 ### Amplicon design CSV
 
@@ -80,51 +122,27 @@ The pipeline expects a glob pattern such as:
 ## Output
 Results are written to the directory specified by `--outdir`.
 
+The `--outdir` directory contains the files required for downstream analysis with the `scFindEd` R package. Intermediate files generated during workflow execution (for example, BAM files) are not copied to the results directory by default.
+
+These intermediate files remain in the Nextflow `work/` directory, where they are available quality control or custom downstream analyses if required. As the `work/` directory can occupy substantial disk space, it is good practice to remove it (set up in the flag `-work-dir path/to/work_folder`) once the workflow has completed successfully and the final results have been verified. Users wishing to retain intermediate files should archive or copy them before cleaning up the work/ directory.
+
 Example structure:
 
 ```
 results/
-│
-├── align/
-│   └── sample.bam
-│   └── sample.bam.bai
-│
-├── amplicons/
-│   └── amplicon_list.txt
-│
-├── amplicon_tsv/
-│   └── sample_ampliconID.tsv
-│   └── sample_ampliconID.tsv
-│   └── sample_ampliconID.tsv
-│   └── sample_ampliconID.tsv
-│
-├── readnames/
-│   └── sample.readnames.tsv
 │ 
 ├── design/
-│   └── 20260310_Pilot1_SNP_final.with_AmpIDs.csv
-│   └── 9824-design-summary.joined.csv
-│   └── 6915_design_summary.joined.csv
-│   └── 9824-design-summary.with_amplicon_seq.csv
-│   └── 6915_design_summary.with_amplicon_seq.csv
-│   └── old_pilot_SNPs.with_AmpIDs.csv
+│   └── 6915_design_summary_joined.csv
 │
 ├── fragment_mutations/
-│   └── sample_name/
-│           └── amplID.fragment_mutations.tsv
-│           └── amplID.fragment_mutations.tsv
-│           └── amplID.fragment_mutations.tsv
-│           └── amplID.fragment_mutations.tsv
+│   └── amplID_fragment_mutations.tsv
+│   └── amplID_fragment_mutations.tsv
+│   └── amplID_fragment_mutations.tsv
+│   └── amplID_fragment_mutations.tsv
 │
-├── qc/
-│    └── sample.flagstat.txt
-│    └── sample.idxstats.txt
-│   
-│
-└── reference_amplicon/
-    ├── reference.fa
-    ├── reference.fa.fai
-    └── reference.dict
+└── qc/
+     └── sample_flagstat.txt
+     └── sample_idxstats.txt 
 ```
 
 ### Alignment filtering

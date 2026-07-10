@@ -1,7 +1,7 @@
 process ALIGN_BWA_MEM {
 
   tag "${sample_id}"
-  publishDir "${params.outdir}/align", mode: 'copy'
+  // publishDir "${params.outdir}/align", mode: 'copy'
 
   conda "$projectDir/envs/align.yml"
 

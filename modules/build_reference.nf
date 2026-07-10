@@ -1,7 +1,7 @@
 process BUILD_REFERENCE {
 
 tag "${design_csv.baseName}"
-  publishDir "${params.outdir}/reference_amplicon", mode: 'copy'
+  // publishDir "${params.outdir}/reference_amplicon", mode: 'copy'
   conda "$projectDir/envs/reference.yml"
 
 input:

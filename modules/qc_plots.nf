@@ -11,8 +11,8 @@ process QC_PLOTS {
     tuple val(sample_id), path(bam), path(bai)
 
   output:
-    path("${sample_id}.flagstat.txt")
-    path("${sample_id}.idxstats.txt")
+    path("${sample_id}_flagstat.txt")
+    path("${sample_id}_idxstats.txt")
 
 
   script:
@@ -20,7 +20,7 @@ process QC_PLOTS {
   set -euo pipefail
 
   # 1) Basic QC
-  samtools flagstat -@ ${task.cpus} ${bam} > ${sample_id}.flagstat.txt
-  samtools idxstats ${bam} > ${sample_id}.idxstats.txt
+  samtools flagstat -@ ${task.cpus} ${bam} > ${sample_id}_flagstat.txt
+  samtools idxstats ${bam} > ${sample_id}_idxstats.txt
   """
 }

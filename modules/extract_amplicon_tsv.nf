@@ -1,7 +1,7 @@
 process EXTRACT_AMPLICON_TSV {
 
   tag "${sample_id}:${amp_id}"
-  publishDir "${params.outdir}/amplicon_tsv/${sample_id}", mode: 'copy'
+  // publishDir "${params.outdir}/amplicon_tsv/${sample_id}", mode: 'copy'
 
   conda "$projectDir/envs/qc.yml"
   cpus 1

@@ -1,7 +1,7 @@
 process GET_AMPLICON_SEQ {
     tag "${design_summary.baseName}"
     conda "${projectDir}/envs/get_amplicon_seq.yml"
-    publishDir "${params.outdir}/design", mode: 'copy'
+    // publishDir "${params.outdir}/design", mode: 'copy'
 
     input:
     path design_summary
