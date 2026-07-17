@@ -13,12 +13,9 @@ include { EXTRACT_READ_MUTATION } from './modules/extract_read_mutation'
 
 
 workflow {
-    if (! params.design) error "Please provide a design CSV file with --design"
-    if (! params.reads) error "Please provide a glob pattern for reads with --reads"
-    if ( !params.snp_info ) error "Please provide SNP info file with --snp_info"
 
-    design_ch = Channel.fromPath(params.design)
-    snp_info_ch       = Channel.fromPath(params.snp_info)
+    design_ch = Channel.fromPath(params.design, checkIfExists: true)
+    snp_info_ch = Channel.fromPath(params.snp_info, checkIfExists: true)
 
     // Add amplicon sequences to the design CSV, producing a new CSV with an added column.
     design_with_seq_ch = GET_AMPLICON_SEQ(design_ch)
@@ -26,9 +23,8 @@ workflow {
   // SNP branch
     snp_with_ampid_ch = GET_AMPLICON_IDS(snp_info_ch, design_with_seq_ch)
     joined_design_ch = JOIN_DESIGN_AND_SNP(design_with_seq_ch, snp_with_ampid_ch)
-
   // Runs BUILD_REFERENCE on the full design CSV
-   def (ref_bundle_ch, ref_dict_ch) = BUILD_REFERENCE(design_with_seq_ch)
+   (ref_bundle_ch, ref_dict_ch) = BUILD_REFERENCE(design_with_seq_ch)
 
   // MAKE_AMPLICON_LIST now uses only joined SNP/design amplicons
    amplicon_list_file_ch = MAKE_AMPLICON_LIST(joined_design_ch)
@@ -43,16 +39,14 @@ workflow {
   amplicon_ids_ch.mix(Channel.of(params.utr_amplicon)).unique() :
   amplicon_ids_ch
 
-  reads_ch = Channel.fromFilePairs(params.reads, flat: true)
-
+  reads_ch = Channel.fromFilePairs(params.reads, flat: true, checkIfExists: true)
   r1_ch = reads_ch.map { sample_id, r1, r2 ->
   tuple(sample_id, r1)
  }
 
   readnames_ch = EXTRACT_READNAMES(r1_ch)
 
-  bam_ch = ALIGN_BWA_MEM(reads_ch, ref_bundle_ch)
-
+  bam_ch = ALIGN_BWA_MEM(reads_ch, ref_bundle_ch.first())
   QC_PLOTS(bam_ch)
 
   // Scatter over SNP/HDR amplicons + optional UTR amplicon
