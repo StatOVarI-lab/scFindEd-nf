@@ -2,7 +2,6 @@ process GET_AMPLICON_IDS {
     tag "${snp_info.baseName}"
     conda "${projectDir}/envs/get_amplicon_ids.yml"
     publishDir "${params.outdir}/design", mode: 'copy'
-    publishDir "${params.outdir}/design", mode: 'copy'
 
     input:
     path snp_info
