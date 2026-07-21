@@ -24,7 +24,7 @@ workflow {
     snp_with_ampid_ch = GET_AMPLICON_IDS(snp_info_ch, design_with_seq_ch)
     joined_design_ch = JOIN_DESIGN_AND_SNP(design_with_seq_ch, snp_with_ampid_ch)
   // Runs BUILD_REFERENCE on the full design CSV
-   (ref_bundle_ch, ref_dict_ch) = BUILD_REFERENCE(design_with_seq_ch)
+    def (ref_bundle_ch, ref_dict_ch) = BUILD_REFERENCE(design_with_seq_ch)
 
   // MAKE_AMPLICON_LIST now uses only joined SNP/design amplicons
    amplicon_list_file_ch = MAKE_AMPLICON_LIST(joined_design_ch)
