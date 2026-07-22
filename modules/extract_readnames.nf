@@ -19,5 +19,11 @@ process EXTRACT_READNAMES {
         "${input_fastq}" \
         "${outfile}" \
         "${compress_flag}"
+
+    # Fail loudly on a truncated stream rather than publishing a short file that
+    # decompresses partway and silently drops reads downstream.
+    if [ "${compress_flag}" = "TRUE" ]; then
+        gzip -t "${outfile}"
+    fi
     """
 }
