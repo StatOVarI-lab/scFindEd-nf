@@ -10,6 +10,7 @@ include { QC_PLOTS } from './modules/qc_plots'
 include { EXTRACT_AMPLICON_TSV } from './modules/extract_amplicon_tsv'
 include { EXTRACT_READNAMES } from './modules/extract_readnames'
 include { EXTRACT_READ_MUTATION } from './modules/extract_read_mutation'
+include { REPORT_UTR_AMPLICON } from './modules/report_utr_amplicon'
 
 
 workflow {
@@ -61,18 +62,57 @@ workflow {
 
   amplicon_tsv_ch = EXTRACT_AMPLICON_TSV(scatter_ch)
 
-  // Exclude UTR amplicon from fragment mutation extraction
+  /*
+   * SNP/HDR amplicons:
+   * exclude the optional UTR amplicon and perform mutation extraction.
+   */
   mutation_tsv_ch = params.utr_amplicon ?
-  amplicon_tsv_ch.filter { sample_id, amp_id, amplicon_tsv ->
-    amp_id != params.utr_amplicon
-  } :
-  amplicon_tsv_ch
+    amplicon_tsv_ch.filter { sample_id, amp_id, amplicon_tsv ->
+      amp_id != params.utr_amplicon
+    } :
+    amplicon_tsv_ch
 
   fragment_input_ch = mutation_tsv_ch
-     .combine(readnames_ch, by: 0)
-     .map { sample_id, amp_id, amplicon_tsv, barcodes_readnames ->
-    tuple(sample_id, amp_id, amplicon_tsv, barcodes_readnames)
-  }
+    .combine(readnames_ch, by: 0)
+    .map { sample_id, amp_id, amplicon_tsv, barcodes_readnames ->
+      tuple(
+        sample_id,
+        amp_id,
+        amplicon_tsv,
+        barcodes_readnames
+      )
+    }
 
-read_mutations_ch = EXTRACT_READ_MUTATION(fragment_input_ch)
+  read_mutations_ch = EXTRACT_READ_MUTATION(fragment_input_ch)
+
+  /*
+   * UTR amplicon:
+   * combine its alignment TSV with the cell-aware read-name table,
+   * but do not perform mutation extraction.
+   */
+  if (params.utr_amplicon) {
+
+    utr_tsv_ch = amplicon_tsv_ch.filter {
+      sample_id, amp_id, amplicon_tsv ->
+        amp_id == params.utr_amplicon
+    }
+
+    utr_input_ch = utr_tsv_ch
+      .combine(readnames_ch, by: 0)
+      .map {
+        sample_id,
+        amp_id,
+        amplicon_tsv,
+        barcodes_readnames ->
+
+        tuple(
+          sample_id,
+          amp_id,
+          amplicon_tsv,
+          barcodes_readnames
+        )
+      }
+
+    utr_report_ch = REPORT_UTR_AMPLICON(utr_input_ch)
+  }
  }
