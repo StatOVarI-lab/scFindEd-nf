@@ -1,0 +1,11 @@
+name: report_utr_amplicon
+
+channels:
+  - bioconda
+  - conda-forge
+  - nodefaults
+
+dependencies:
+  - r-base
+  - r-readr
+  - r-dplyr

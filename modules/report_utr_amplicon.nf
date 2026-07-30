@@ -6,7 +6,7 @@ process REPORT_UTR_AMPLICON {
     mode: 'copy',
     pattern: "*.tsv.gz"
 
-  conda "$projectDir/envs/qc.yml"
+  conda "$projectDir/envs/report_utr_amplicon.yml"
 
   input:
   tuple val(sample_id),
