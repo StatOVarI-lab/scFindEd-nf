@@ -1,8 +1,7 @@
 #!/usr/bin/env Rscript
 
 suppressPackageStartupMessages({
-    library(readr)
-    library(dplyr)
+    library(data.table)
 })
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -11,42 +10,56 @@ if (length(args) != 5) {
     stop(
         "Usage: report_utr_amplicon.R ",
         "<sample_id> <amp_id> <amplicon_tsv> ",
-        "<readnames_tsv> <output_tsv>"
+        "<readnames_tsv> <output_tsv>",
+        call. = FALSE
     )
 }
 
-sample_id     <- args[[1]]
-amp_id        <- args[[2]]
-amplicon_file <- args[[3]]
+sample_id      <- args[[1]]
+amp_id         <- args[[2]]
+amplicon_file  <- args[[3]]
 readnames_file <- args[[4]]
-output_file   <- args[[5]]
+output_file    <- args[[5]]
 
-amplicon_reads <- read_tsv(
-    amplicon_file,
-    show_col_types = FALSE
-)
-
-cell_readnames <- read_tsv(
+# Read only required columns from the barcode/read-name table
+cell_readnames <- fread(
     readnames_file,
-    show_col_types = FALSE
+    select = c("read_name", "cell_barcode")
 )
 
-utr_reads <- amplicon_reads %>%
-    left_join(
-        cell_readnames,
-        by = "read_name"
-    ) %>%
-    mutate(
-        sample_id = sample_id,
-        amp_id = amp_id
-    ) %>%
-    select(
-        sample_id,
-        amp_id,
-        everything()
-    )
+# Read UTR alignment data
+amplicon_reads <- fread(
+    amplicon_file
+)
 
-write_tsv(
+# Key both tables for an efficient join
+setkey(cell_readnames, read_name)
+setkey(amplicon_reads, read_name)
+
+# Add cell barcode information.
+# Keep all UTR reads, even if no barcode is matched.
+utr_reads <- cell_readnames[
+    amplicon_reads,
+    on = "read_name"
+]
+
+# Add sample/amplicon identifiers by reference
+utr_reads[, sample_id := sample_id]
+utr_reads[, amp_id := amp_id]
+
+# Put identifiers first
+setcolorder(
     utr_reads,
-    output_file
+    c(
+        "sample_id",
+        "amp_id",
+        setdiff(names(utr_reads), c("sample_id", "amp_id"))
+    )
+)
+
+fwrite(
+    utr_reads,
+    output_file,
+    sep = "\t",
+    quote = FALSE
 )
