@@ -1,7 +1,7 @@
 name: reference
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - nodefaults
 dependencies:
   - r-base=4.3
