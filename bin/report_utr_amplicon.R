@@ -21,50 +21,49 @@ amplicon_file  <- args[[3]]
 readnames_file <- args[[4]]
 output_file    <- args[[5]]
 
-# Read barcode/read-name table.
-# This file has no header, so assign column names explicitly.
+# Only read the read names from the requested UTR amplicon.
+amplicon_reads <- fread(
+    amplicon_file,
+    select = "read_name"
+)
+
+# Read-name / cell-barcode table has no header.
 cell_readnames <- fread(
     readnames_file,
     header = FALSE,
     col.names = c("read_name", "cell_barcode")
 )
 
-# Read UTR alignment data.
-amplicon_reads <- fread(
-    amplicon_file
-)
-
-# Check expected join column exists.
-if (!"read_name" %in% names(amplicon_reads)) {
-    stop(
-        "Column 'read_name' not found in amplicon input.",
-        call. = FALSE
-    )
-}
-
-# Key tables for efficient matching.
-setkey(cell_readnames, read_name)
-setkey(amplicon_reads, read_name)
-
-# Keep all UTR reads and append the matching cell barcode.
-utr_reads <- cell_readnames[
-    amplicon_reads,
-    on = "read_name"
+# Remove reads without a valid cell barcode.
+cell_readnames <- cell_readnames[
+    !is.na(cell_barcode) & cell_barcode != ""
 ]
 
-# Add sample and amplicon identifiers by reference.
+# Keep only reads that:
+#   1. mapped to the UTR amplicon, and
+#   2. have an associated cell barcode.
+utr_reads <- merge(
+    amplicon_reads,
+    cell_readnames,
+    by = "read_name",
+    all = FALSE,
+    sort = FALSE
+)
+
+# Add sample and amplicon identifiers.
 utr_reads[, sample_id := sample_id]
 utr_reads[, amp_id := amp_id]
 
-# Put identifiers first.
-setcolorder(
-    utr_reads,
-    c(
-        "sample_id",
-        "amp_id",
-        setdiff(names(utr_reads), c("sample_id", "amp_id"))
+# Keep only the required output columns.
+utr_reads <- utr_reads[
+    ,
+    .(
+        sample_id,
+        cell_barcode,
+        amp_id,
+        read_name
     )
-)
+]
 
 fwrite(
     utr_reads,
