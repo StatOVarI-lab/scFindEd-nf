@@ -47,7 +47,13 @@ Note: Test datasets are not included in the repository due to file size.
 
 ## Example bash script for HPC
 
-The exact submission script depends on your HPC scheduler (e.g. LSF, Slurm, PBS or SGE). An example LSF submission script is shown below.
+The exact submission script depends on your HPC scheduler (e.g. LSF, Slurm). The pipeline uses Nextflow profiles so that software management and cluster execution can be configured separately.
+
+The conda profile enables the Conda environments required by individual pipeline processes, while the `lsf` profile configures Nextflow to submit each process as a separate LSF job with its own CPU and memory requirements.
+
+For an LSF system, both profiles can be enabled with:
+
+`-profile conda,lsf`
 
 ```
 #!/bin/bash
@@ -58,8 +64,8 @@ The exact submission script depends on your HPC scheduler (e.g. LSF, Slurm, PBS 
 #BSUB -n 32                 # ask for 32 CPUs
 #BSUB -W 0X:00              # maximum runtime: X hours
 #BSUB -G xxxxx
-#BSUB -R "select[mem>128000] rusage[mem=128000]"
-#BSUB -M 128000
+#BSUB -R "select[mem>128000] rusage[mem=8000]"
+#BSUB -M 8000
 
 # stop the script if a command fails, if a variable is missing, or if a piped command fails.
 set -euo pipefail
@@ -69,7 +75,7 @@ module load conda
 
 cd /path/to/scFindEd-nf
 
-nextflow run main.nf -profile conda \
+nextflow run main.nf -profile conda,lsf \
   --design /path/to/design_summary.csv \
   --reads '/path/to/fastq/*_R{1,2}_*.fastq.gz' \
   --snp_info /path/to/info_SNPs.csv \
