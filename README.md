@@ -86,6 +86,23 @@ nextflow run main.nf -profile conda,lsf \
 
 ```
 
+When the `lsf` profile is used, the LSF job shown above mainly acts as the Nextflow controller. Individual pipeline processes are submitted as separate LSF jobs, and their CPU and memory requirements are defined in `nextflow.config`. Therefore, the controller job itself does not need to request the combined resources required by the full workflow.
+
+Cluster-specific settings such as queue names, project or group identifiers, runtime limits, and module names should be adjusted for the local HPC environment.
+
+For execution without an LSF scheduler, the conda profile can be used on its own:
+
+```
+nextflow run main.nf -profile conda \
+  [pipeline options]
+```
+
+The resolved configuration can be inspected before running with:
+
+`nextflow config -profile conda,lsf`
+
+This is useful for checking which executor, CPU and memory settings will be applied.
+
 ## Parameters
 | Parameter   | Description                                   |
 |-------------|-----------------------------------------------|
@@ -104,6 +121,12 @@ nextflow run main.nf -profile conda,lsf \
 1. Design Summary (`--design`)
 2. SNP information (`--snp_info`)
 3. FASTQ files (`--reads`)
+
+Input FASTQ read names are expected to contain an identifier encoded using the `RG:Z:` tag, following the format: `@<read_name> RG:Z:<barcode>`. For example: `@M02088:15:000000000-LLRMH:1:1102:15466:1334 RG:Z:GGAGATGAGAAGAGAACT-1`. 
+
+ In the current single-cell workflow, the `RG:Z:` value is treated as the cell barcode. The same tagging convention could also be used in future for sample- or experiment-level identifiers.
+
+There is no fixed barcode length enforced by the current code. The parser simply takes everything after `RG:Z:` to the end of the FASTQ header. 
 
 ### Amplicon design CSV
 
@@ -140,11 +163,16 @@ results/
 ├── design/
 │   └── 6915_design_summary_joined.csv
 │
+├── reference_amplicon/
+│
 ├── fragment_mutations/
 │   └── amplID_fragment_mutations.tsv
 │   └── amplID_fragment_mutations.tsv
 │   └── amplID_fragment_mutations.tsv
 │   └── amplID_fragment_mutations.tsv
+│ 
+├── utr_amplicon/
+│   └── sample_name_amplID_utr_reads.tsv.gz
 │
 └── qc/
      └── sample_flagstat.txt
