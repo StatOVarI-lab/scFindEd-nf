@@ -19,5 +19,9 @@ process EXTRACT_READNAMES {
         "${input_fastq}" \
         "${outfile}" \
         "${compress_flag}"
+
+    if [ "${compress_flag}" = "TRUE" ]; then
+        gzip -t "${outfile}"
+    fi
     """
 }
