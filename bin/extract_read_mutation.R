@@ -20,18 +20,6 @@ input_file <- args[3]
 barcode_file <- args[4]
 output_file <- args[5]
 
-amp <- readr::read_tsv(input_file, show_col_types = FALSE)
-
-barcodes <- readr::read_tsv(
-  barcode_file,
-  col_names = c("read_name", "cell_barcode"),
-  show_col_types = FALSE
-)
-
-amp <- amp %>%
-  left_join(barcodes, by = "read_name") %>%
-  filter(!is.na(cell_barcode), cell_barcode != "")
-
 empty_out <- tibble(
   sample_id = character(),
   cell_barcode = character(),
@@ -53,41 +41,39 @@ empty_out <- tibble(
   n_fragments = integer()
 )
 
-if (nrow(amp) == 0) {
-  readr::write_tsv(empty_out, output_file)
-  quit(save = "no")
-}
-
-amp_grouped_input <- amp %>%
+# Read amplicon data and filter BEFORE loading/joining barcodes
+amp <- readr::read_tsv(
+  input_file,
+  show_col_types = FALSE
+) %>%
   mutate(
     flag = as.integer(flag),
     nm = as.integer(nm),
-
     is_paired = bitwAnd(flag, 1) != 0,
     is_proper_pair = bitwAnd(flag, 2) != 0,
     is_read1 = bitwAnd(flag, 64) != 0,
     is_read2 = bitwAnd(flag, 128) != 0,
-
     is_secondary = bitwAnd(flag, 256) != 0,
     is_supplementary = bitwAnd(flag, 2048) != 0
   ) %>%
   filter(
+    amp_id == amp_id_arg,
     is_paired,
     is_proper_pair,
     !is_secondary,
     !is_supplementary
   )
 
-if (nrow(amp_grouped_input) == 0) {
+if (nrow(amp) == 0) {
   readr::write_tsv(empty_out, output_file)
   quit(save = "no")
 }
 
-r1 <- amp_grouped_input %>%
+# Split R1/R2 before barcode join
+r1 <- amp %>%
   filter(is_read1) %>%
   select(
     read_name,
-    cell_barcode,
     amp_id,
     r1_pos = pos,
     r1_mapq = mapq,
@@ -98,11 +84,10 @@ r1 <- amp_grouped_input %>%
     r1_seq = seq
   )
 
-r2 <- amp_grouped_input %>%
+r2 <- amp %>%
   filter(is_read2) %>%
   select(
     read_name,
-    cell_barcode,
     amp_id,
     r2_pos = pos,
     r2_mapq = mapq,
@@ -113,14 +98,42 @@ r2 <- amp_grouped_input %>%
     r2_seq = seq
   )
 
+rm(amp)
+gc()
+
 paired <- inner_join(
   r1,
   r2,
-  by = c("read_name", "cell_barcode", "amp_id")
-) %>%
+  by = c("read_name", "amp_id")
+)
+
+rm(r1, r2)
+gc()
+
+if (nrow(paired) == 0) {
+  readr::write_tsv(empty_out, output_file)
+  quit(save = "no")
+}
+
+# Only now load the large barcode table
+barcodes <- readr::read_tsv(
+  barcode_file,
+  col_names = c("read_name", "cell_barcode"),
+  show_col_types = FALSE
+)
+
+paired <- paired %>%
+  left_join(barcodes, by = "read_name") %>%
+  filter(
+    !is.na(cell_barcode),
+    cell_barcode != ""
+  ) %>%
   mutate(
     sample_id = sample_id
   )
+
+rm(barcodes)
+gc()
 
 if (nrow(paired) == 0) {
   readr::write_tsv(empty_out, output_file)
@@ -152,5 +165,8 @@ out <- paired %>%
     .groups = "drop"
   ) %>%
   arrange(desc(n_fragments))
+
+rm(paired)
+gc()
 
 readr::write_tsv(out, output_file)
