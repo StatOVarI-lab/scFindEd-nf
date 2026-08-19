@@ -162,6 +162,12 @@ results/
 │ 
 ├── design/
 │   └── 6915_design_summary_joined.csv
+|
+├── fastqc/
+│   ├── sample_R1_fastqc.html
+│   ├── sample_R1_fastqc.zip
+│   ├── sample_R2_fastqc.html
+│   └── sample_R2_fastqc.zip
 │
 ├── reference_amplicon/
 │

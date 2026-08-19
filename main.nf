@@ -11,6 +11,7 @@ include { EXTRACT_AMPLICON_TSV } from './modules/extract_amplicon_tsv'
 include { EXTRACT_READNAMES } from './modules/extract_readnames'
 include { EXTRACT_READ_MUTATION } from './modules/extract_read_mutation'
 include { REPORT_UTR_AMPLICON } from './modules/report_utr_amplicon'
+include { FASTQC } from './modules/fastqc'
 
 
 workflow {
@@ -45,6 +46,8 @@ workflow {
   amplicon_ids_ch
 
   reads_ch = Channel.fromFilePairs(params.reads, flat: true)
+
+  FASTQC(reads_ch)
 
   r1_ch = reads_ch.map { sample_id, r1, r2 ->
   tuple(sample_id, r1)
