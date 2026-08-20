@@ -168,15 +168,9 @@ workflow {
 
     FASTQC(reads_ch)
 
-    /*
-    * Collect FastQC results from all samples/read pairs
-    * and generate one combined MultiQC report.
-    */
-    fastqc_files_ch = FASTQC.out.html
-        .mix(FASTQC.out.zip)
-        .collect()
+    fastqc_zip_ch = FASTQC.out.zip.collect()
 
-    MULTIQC(fastqc_files_ch)
+    MULTIQC(fastqc_zip_ch)
 
 
     /*
