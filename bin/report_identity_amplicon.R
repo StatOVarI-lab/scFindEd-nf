@@ -8,7 +8,7 @@ args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 5) {
     stop(
-        "Usage: report_utr_amplicon.R ",
+        "Usage: report_identity_amplicon.R ",
         "<sample_id> <amp_id> <amplicon_tsv> ",
         "<readnames_tsv> <output_tsv>",
         call. = FALSE
@@ -21,7 +21,7 @@ amplicon_file  <- args[[3]]
 readnames_file <- args[[4]]
 output_file    <- args[[5]]
 
-# Only read the read names from the requested UTR amplicon.
+# Only read the read names from the requested identity amplicon.
 amplicon_reads <- fread(
     amplicon_file,
     select = "read_name"
@@ -40,9 +40,9 @@ cell_readnames <- cell_readnames[
 ]
 
 # Keep only reads that:
-#   1. mapped to the UTR amplicon, and
+#   1. mapped to the identity amplicon, and
 #   2. have an associated cell barcode.
-utr_reads <- merge(
+identity_reads <- merge(
     amplicon_reads,
     cell_readnames,
     by = "read_name",
@@ -51,11 +51,11 @@ utr_reads <- merge(
 )
 
 # Add sample and amplicon identifiers.
-utr_reads[, sample_id := sample_id]
-utr_reads[, amp_id := amp_id]
+identity_reads[, sample_id := sample_id]
+identity_reads[, amp_id := amp_id]
 
 # Keep only the required output columns.
-utr_reads <- utr_reads[
+identity_reads <- identity_reads[
     ,
     .(
         sample_id,
@@ -66,7 +66,7 @@ utr_reads <- utr_reads[
 ]
 
 fwrite(
-    utr_reads,
+    identity_reads,
     output_file,
     sep = "\t",
     quote = FALSE

@@ -37,7 +37,7 @@ nextflow run main.nf -profile conda \
   --design /path/to/design_summary.csv \
   --reads '/path/to/fastq/*_R{1,2}_*.fastq.gz' \
   --snp_info /path/to/info_SNPs.csv \
-  --utr_amplicon AMPLxxxxxxx \
+  --identity_amplicon AMPLxxxxxxx \
   --outdir /path/to/results \
   --threads 32 \
   -work-dir path/to/work_folder \
@@ -79,7 +79,7 @@ nextflow run main.nf -profile conda,lsf \
   --design /path/to/design_summary.csv \
   --reads '/path/to/fastq/*_R{1,2}_*.fastq.gz' \
   --snp_info /path/to/info_SNPs.csv \
-  --utr_amplicon AMPLxxxxxxx \
+  --identity_amplicon AMPLxxxxxxx \
   --outdir /path/to/results \
   --threads 32 \
   -work-dir path/to/work_folder \
@@ -109,7 +109,7 @@ This is useful for checking which executor, CPU and memory settings will be appl
 | `--design`  | Amplicon design CSV file.                      |
 | `--reads`   | Paired-end FASTQ file pattern. Input FASTQ files are expected to contain cell barcodes in the read names.         |
 | `--snp_info`| CSV file describing the SNPs to analyse, including HDR template sequences.         |
-| `--utr_amplicon`| AmpID corresponding to the UTR barcode amplicon.       |
+| `--identity_amplicon`| AmpID corresponding to the identity barcode amplicon eg: `AMPL904013,AMPL904569`.       |
 | `--outdir`  | Directory where results will be written       |
 | `--threads` | Number of CPU threads allocated to multithreaded processes (`default: 10`).         |
 | `--compress`| Compress TSV outputs using gzip (`true` by default).        |
@@ -168,17 +168,22 @@ results/
 │   ├── sample_R1_fastqc.zip
 │   ├── sample_R2_fastqc.html
 │   └── sample_R2_fastqc.zip
+│  
+│ 
+├── multiqc/
+│   ├── multiqc_report.html
+│   └── multiqc_data/
 │
 ├── reference_amplicon/
 │
 ├── fragment_mutations/
-│   └── amplID_fragment_mutations.tsv
-│   └── amplID_fragment_mutations.tsv
-│   └── amplID_fragment_mutations.tsv
-│   └── amplID_fragment_mutations.tsv
+│   └── amplID_fragment_mutations.tsv.gz
+│   └── amplID_fragment_mutations.tsv.gz
+│   └── amplID_fragment_mutations.tsv.gz
+│   └── amplID_fragment_mutations.tsv.gz
 │ 
-├── utr_amplicon/
-│   └── sample_name_amplID_utr_reads.tsv.gz
+├── identity_amplicon/
+│   └── sample_name_amplID_identity_reads.tsv.gz
 │
 └── qc/
      └── sample_flagstat.txt

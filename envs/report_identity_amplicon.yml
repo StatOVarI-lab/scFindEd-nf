@@ -1,4 +1,4 @@
-name: report_utr_amplicon
+name: report_identity_amplicon
 
 channels:
   - conda-forge
