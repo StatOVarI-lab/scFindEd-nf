@@ -2,9 +2,9 @@ process MULTIQC {
 
     tag "MultiQC"
 
-    publishDir "${params.outdir}/fastqc", mode: 'copy'
+    publishDir "${params.outdir}/multiqc", mode: 'copy'
 
-    conda "$projectDir/envs/multiqc.yml"
+    conda "$projectDir/envs/fastqc.yml"
 
     cpus 1
 
