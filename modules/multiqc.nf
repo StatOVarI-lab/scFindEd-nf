@@ -4,7 +4,7 @@ process MULTIQC {
 
     publishDir "${params.outdir}/multiqc", mode: 'copy'
 
-    conda "$projectDir/envs/fastqc.yml"
+    conda "$projectDir/envs/multiqc.yml"
 
     cpus 1
 
@@ -13,7 +13,7 @@ process MULTIQC {
 
     output:
     path "multiqc_report.html"
-    path "multiqc_data"
+    path "multiqc_report_data"
 
     script:
     """
