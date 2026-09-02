@@ -21,27 +21,36 @@ amplicon_file  <- args[[3]]
 readnames_file <- args[[4]]
 output_file    <- args[[5]]
 
-# Only read the read names from the requested identity amplicon.
+# Read the full alignment table for the requested identity amplicon.
 amplicon_reads <- fread(
-    amplicon_file,
-    select = "read_name"
+    amplicon_file
 )
+
+# Basic sanity check.
+if (!"read_name" %in% names(amplicon_reads)) {
+    stop(
+        "Column 'read_name' not found in identity amplicon TSV.",
+        call. = FALSE
+    )
+}
 
 # Read-name / cell-barcode table has no header.
 cell_readnames <- fread(
     readnames_file,
     header = FALSE,
-    col.names = c("read_name", "cell_barcode")
+    col.names = c(
+        "read_name",
+        "cell_barcode"
+    )
 )
 
 # Remove reads without a valid cell barcode.
 cell_readnames <- cell_readnames[
-    !is.na(cell_barcode) & cell_barcode != ""
+    !is.na(cell_barcode) &
+    cell_barcode != ""
 ]
 
-# Keep only reads that:
-#   1. mapped to the identity amplicon, and
-#   2. have an associated cell barcode.
+# Keep only identity-amplicon alignments associated with a cell barcode.
 identity_reads <- merge(
     amplicon_reads,
     cell_readnames,
@@ -54,16 +63,26 @@ identity_reads <- merge(
 identity_reads[, sample_id := sample_id]
 identity_reads[, amp_id := amp_id]
 
-# Keep only the required output columns.
-identity_reads <- identity_reads[
-    ,
-    .(
-        sample_id,
-        cell_barcode,
-        amp_id,
-        read_name
+# Put the identifying columns first.
+first_cols <- c(
+    "sample_id",
+    "cell_barcode",
+    "amp_id",
+    "read_name"
+)
+
+other_cols <- setdiff(
+    names(identity_reads),
+    first_cols
+)
+
+setcolorder(
+    identity_reads,
+    c(
+        first_cols,
+        other_cols
     )
-]
+)
 
 fwrite(
     identity_reads,
