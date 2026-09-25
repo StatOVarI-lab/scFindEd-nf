@@ -64,6 +64,14 @@ infer_edit_blocks_df <- function(
   hit_start <- start(hits)[1]
   hit_end <- end(hits)[1]
 
+  message(
+  "DEBUG | orientation=", orientation,
+  " | amp_length=", length(amp),
+  " | hdr_length=", length(hdr_oriented),
+  " | hit_start=", hit_start,
+  " | hit_end=", hit_end
+)
+
   amp_subseq <- Biostrings::subseq(
     amp,
     start = hit_start,
@@ -382,6 +390,14 @@ get_amplicon_IDs_and_blocks <- function(
       AmpID <- ref_AmpIDs[
         match_idx
       ]
+
+      message(
+  "SNP row=", i,
+  " | AmpID=", AmpID,
+  " | HDR_length=", nchar(hdr_template),
+  " | amplicon_length=",
+  nchar(temp_design_summary$amplicon_seq[match_idx])
+)
 
 
       block_df <- infer_edit_blocks_df(
