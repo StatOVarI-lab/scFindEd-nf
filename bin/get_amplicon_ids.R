@@ -9,7 +9,11 @@ library(dplyr)
 infer_edit_blocks_df <- function(
   hdr_template,
   amplicon_seq,
-  max_mismatch = 5
+  max_mismatch = 5,
+  snp_row = NA_integer_,
+  amp_id = NA_character_,
+  gene = NA_character_,
+  snp_name = NA_character_
 ) {
 
   hdr <- Biostrings::DNAString(hdr_template)
@@ -25,6 +29,10 @@ infer_edit_blocks_df <- function(
   orientation <- "forward"
   hdr_oriented <- hdr
 
+
+  # ---------------------------------------------------------
+  # Try reverse complement if there is no forward match
+  # ---------------------------------------------------------
   if (length(hits) == 0) {
 
     hdr_rc <- Biostrings::reverseComplement(hdr)
@@ -40,6 +48,10 @@ infer_edit_blocks_df <- function(
     hdr_oriented <- hdr_rc
   }
 
+
+  # ---------------------------------------------------------
+  # No matching region found
+  # ---------------------------------------------------------
   if (length(hits) == 0) {
 
     return(
@@ -54,29 +66,227 @@ infer_edit_blocks_df <- function(
     )
   }
 
+
+  # ---------------------------------------------------------
+  # More than one match within the same amplicon is ambiguous
+  # ---------------------------------------------------------
   if (length(hits) > 1) {
+
     stop(
       "HDR template matches multiple locations in amplicon.",
       call. = FALSE
     )
   }
 
+
+  # ---------------------------------------------------------
+  # Coordinates of HDR match within the amplicon
+  # ---------------------------------------------------------
   hit_start <- start(hits)[1]
   hit_end <- end(hits)[1]
 
-  message(
-  "DEBUG | orientation=", orientation,
-  " | amp_length=", length(amp),
-  " | hdr_length=", length(hdr_oriented),
-  " | hit_start=", hit_start,
-  " | hit_end=", hit_end
-)
+  amp_length <- length(amp)
+  hdr_length <- length(hdr_oriented)
 
+
+  # ---------------------------------------------------------
+  # Handle HDR templates that extend beyond the amplicon
+  # boundary.
+  #
+  # Example:
+  #
+  #   amplicon length = 232 bp
+  #   HDR length      = 100 bp
+  #   HDR match       = 135-234
+  #
+  # The amplicon ends at 232, so the final 2 bp of the HDR
+  # cannot be compared.
+  #
+  # In this case, use only the part of the HDR that overlaps
+  # the amplicon and issue a visible warning.
+  # ---------------------------------------------------------
+
+  left_bases_outside <- max(
+    0L,
+    1L - hit_start
+  )
+
+  right_bases_outside <- max(
+    0L,
+    hit_end - amp_length
+  )
+
+
+  if (
+    left_bases_outside > 0 ||
+    right_bases_outside > 0
+  ) {
+
+    original_hit_start <- hit_start
+    original_hit_end <- hit_end
+
+    overlap_start <- max(
+      1L,
+      hit_start
+    )
+
+    overlap_end <- min(
+      amp_length,
+      hit_end
+    )
+
+    overlap_length <-
+      overlap_end -
+      overlap_start +
+      1L
+
+
+    # -------------------------------------------------------
+    # Safety check: there must be some overlap
+    # -------------------------------------------------------
+    if (overlap_length <= 0) {
+
+      stop(
+        paste0(
+          "HDR template has no valid overlap with amplicon ",
+          amp_id,
+          "."
+        ),
+        call. = FALSE
+      )
+    }
+
+
+    # -------------------------------------------------------
+    # Work out which part of the oriented HDR corresponds
+    # to the sequence that is actually present in the
+    # amplicon.
+    # -------------------------------------------------------
+    hdr_overlap_start <-
+      1L +
+      left_bases_outside
+
+    hdr_overlap_end <-
+      hdr_length -
+      right_bases_outside
+
+
+    if (
+      hdr_overlap_start > hdr_overlap_end ||
+      hdr_overlap_start < 1 ||
+      hdr_overlap_end > hdr_length
+    ) {
+
+      stop(
+        paste0(
+          "Unable to determine valid HDR overlap for ",
+          "SNP row ", snp_row,
+          ", AmpID ", amp_id,
+          "."
+        ),
+        call. = FALSE
+      )
+    }
+
+
+    warning_text <- paste0(
+      "\n",
+      "============================================================\n",
+      "WARNING: HDR TEMPLATE EXTENDS BEYOND AMPLICON BOUNDARY\n",
+      "------------------------------------------------------------\n",
+      "SNP row: ", snp_row, "\n",
+      "Gene: ", gene, "\n",
+      "SNP: ", snp_name, "\n",
+      "AmpID: ", amp_id, "\n",
+      "HDR orientation: ", orientation, "\n",
+      "HDR length: ", hdr_length, " bp\n",
+      "Amplicon length: ", amp_length, " bp\n",
+      "Original HDR match: ",
+      original_hit_start, "-", original_hit_end, "\n",
+      "Bases outside left boundary: ",
+      left_bases_outside, " bp\n",
+      "Bases outside right boundary: ",
+      right_bases_outside, " bp\n",
+      "Overlap used for mutation inference: ",
+      overlap_start, "-", overlap_end,
+      " (", overlap_length, " bp)\n",
+      "The part of the HDR outside the amplicon cannot be ",
+      "evaluated and will be ignored.\n",
+      "Please check whether the amplicon boundary is correct.\n",
+      "============================================================\n"
+    )
+
+
+    # -------------------------------------------------------
+    # Print to stdout.
+    #
+    # With `debug true` in the Nextflow process this will
+    # also be visible in the main LSF .out file.
+    # -------------------------------------------------------
+    cat(
+      warning_text,
+      file = stdout()
+    )
+
+
+    # -------------------------------------------------------
+    # Also retain the warning in task stderr (.command.err)
+    # -------------------------------------------------------
+    warning(
+      warning_text,
+      call. = FALSE
+    )
+
+
+    # -------------------------------------------------------
+    # Restrict both sequences to their overlapping region
+    # -------------------------------------------------------
+    hit_start <- overlap_start
+    hit_end <- overlap_end
+
+    hdr_oriented <- Biostrings::subseq(
+      hdr_oriented,
+      start = hdr_overlap_start,
+      end = hdr_overlap_end
+    )
+  }
+
+
+  # ---------------------------------------------------------
+  # Extract the matching region from the amplicon
+  # ---------------------------------------------------------
   amp_subseq <- Biostrings::subseq(
     amp,
     start = hit_start,
     end = hit_end
   )
+
+
+  # ---------------------------------------------------------
+  # Safety check:
+  # the amplicon and HDR sections must now have the same
+  # length before base-by-base comparison
+  # ---------------------------------------------------------
+  if (
+    length(amp_subseq) !=
+    length(hdr_oriented)
+  ) {
+
+    stop(
+      paste0(
+        "HDR/amplicon overlap length mismatch for ",
+        "SNP row ", snp_row,
+        ", AmpID ", amp_id,
+        ": amplicon overlap = ",
+        length(amp_subseq),
+        " bp; HDR overlap = ",
+        length(hdr_oriented),
+        " bp."
+      ),
+      call. = FALSE
+    )
+  }
+
 
   amp_chars <- strsplit(
     as.character(amp_subseq),
@@ -88,10 +298,18 @@ infer_edit_blocks_df <- function(
     ""
   )[[1]]
 
+
+  # ---------------------------------------------------------
+  # Identify bases that differ between the amplicon and HDR
+  # ---------------------------------------------------------
   mismatch_idx <- which(
     amp_chars != hdr_chars
   )
 
+
+  # ---------------------------------------------------------
+  # HDR matches the available amplicon sequence exactly
+  # ---------------------------------------------------------
   if (length(mismatch_idx) == 0) {
 
     return(
@@ -106,6 +324,10 @@ infer_edit_blocks_df <- function(
     )
   }
 
+
+  # ---------------------------------------------------------
+  # Group consecutive mismatches into edit blocks
+  # ---------------------------------------------------------
   block_id <- cumsum(
     c(
       1,
@@ -118,16 +340,22 @@ infer_edit_blocks_df <- function(
     block_id
   )
 
+
   tibble(
     hdr_orientation = orientation,
 
-    block_index = seq_along(blocks),
+    block_index = seq_along(
+      blocks
+    ),
 
     start = vapply(
       blocks,
       function(idx) {
+
         as.integer(
-          hit_start + min(idx) - 1
+          hit_start +
+          min(idx) -
+          1
         )
       },
       integer(1)
@@ -136,7 +364,10 @@ infer_edit_blocks_df <- function(
     length = vapply(
       blocks,
       function(idx) {
-        as.integer(length(idx))
+
+        as.integer(
+          length(idx)
+        )
       },
       integer(1)
     ),
@@ -144,6 +375,7 @@ infer_edit_blocks_df <- function(
     ref = vapply(
       blocks,
       function(idx) {
+
         paste0(
           amp_chars[idx],
           collapse = ""
@@ -155,6 +387,7 @@ infer_edit_blocks_df <- function(
     change = vapply(
       blocks,
       function(idx) {
+
         paste0(
           hdr_chars[idx],
           collapse = ""
@@ -166,6 +399,7 @@ infer_edit_blocks_df <- function(
 }
 
 
+
 get_amplicon_IDs_and_blocks <- function(
   SNP_info,
   design_summary,
@@ -174,6 +408,7 @@ get_amplicon_IDs_and_blocks <- function(
 ) {
 
   if (verbose) {
+
     message(
       "Assigning AmpIDs and mutation blocks..."
     )
@@ -184,6 +419,7 @@ get_amplicon_IDs_and_blocks <- function(
   # Validate AmpID column
   # ---------------------------------------------------------
   if (!"AmpID" %in% colnames(design_summary)) {
+
     stop(
       "Missing required column in design_summary: AmpID",
       call. = FALSE
@@ -227,7 +463,10 @@ get_amplicon_IDs_and_blocks <- function(
   ]
 
 
-  if (verbose && length(identity_amplicons) > 0) {
+  if (
+    verbose &&
+    length(identity_amplicons) > 0
+  ) {
 
     message(
       "Excluding identity amplicon(s) from HDR matching: ",
@@ -325,7 +564,8 @@ get_amplicon_IDs_and_blocks <- function(
 
   for (i in seq_len(nrow(SNP_info))) {
 
-    hdr_template <- SNP_info$HDR_template[i]
+    hdr_template <-
+      SNP_info$HDR_template[i]
 
     hdr_dna <- Biostrings::DNAString(
       hdr_template
@@ -340,7 +580,9 @@ get_amplicon_IDs_and_blocks <- function(
     )
 
 
+    # -------------------------------------------------------
     # Try reverse complement if no forward match
+    # -------------------------------------------------------
     if (sum(matches > 0) == 0) {
 
       matches <- Biostrings::vcountPattern(
@@ -354,7 +596,9 @@ get_amplicon_IDs_and_blocks <- function(
     }
 
 
+    # -------------------------------------------------------
     # More than one amplicon matched
+    # -------------------------------------------------------
     if (sum(matches > 0) > 1) {
 
       stop(
@@ -367,7 +611,9 @@ get_amplicon_IDs_and_blocks <- function(
     }
 
 
+    # -------------------------------------------------------
     # No matching amplicon
+    # -------------------------------------------------------
     if (sum(matches > 0) == 0) {
 
       block_df <- tibble(
@@ -391,22 +637,40 @@ get_amplicon_IDs_and_blocks <- function(
         match_idx
       ]
 
-      message(
-  "SNP row=", i,
-  " | AmpID=", AmpID,
-  " | HDR_length=", nchar(hdr_template),
-  " | amplicon_length=",
-  nchar(temp_design_summary$amplicon_seq[match_idx])
-)
 
-
+      # -----------------------------------------------------
+      # Infer mutation blocks.
+      #
+      # Pass identifying information so that any boundary
+      # warning clearly identifies the affected SNP/AmpID.
+      # -----------------------------------------------------
       block_df <- infer_edit_blocks_df(
         hdr_template = hdr_template,
+
         amplicon_seq =
           temp_design_summary$amplicon_seq[
             match_idx
           ],
-        max_mismatch = 5
+
+        max_mismatch = 5,
+
+        snp_row = i,
+
+        amp_id = AmpID,
+
+        gene =
+          if ("Gene" %in% colnames(SNP_info)) {
+            SNP_info$Gene[i]
+          } else {
+            NA_character_
+          },
+
+        snp_name =
+          if ("SNP" %in% colnames(SNP_info)) {
+            SNP_info$SNP[i]
+          } else {
+            NA_character_
+          }
       )
     }
 
@@ -440,6 +704,7 @@ get_amplicon_IDs_and_blocks <- function(
 
 
   if (verbose) {
+
     message(
       "AmpIDs and mutation blocks assigned."
     )
@@ -448,6 +713,7 @@ get_amplicon_IDs_and_blocks <- function(
 
   out
 }
+
 
 
 # ============================================================
@@ -486,11 +752,12 @@ output_csv <- args[3]
 #
 # Examples:
 #
-# AMPL902654
+# TAMPL194941
 #
-# AMPL902654,AMPL902655
+# TAMPL194941,TAMPLxxxxxx
 # ---------------------------------------------------------
 identity_amplicon_arg <- ""
+
 
 if (
   length(args) >= 4 &&
@@ -526,6 +793,7 @@ if (nzchar(identity_amplicon_arg)) {
 verbose <- "--verbose" %in% args
 
 
+
 # ============================================================
 # Read inputs
 # ============================================================
@@ -541,6 +809,7 @@ SNP_info <- readr::read_csv(
 )
 
 
+
 # ============================================================
 # Run
 # ============================================================
@@ -551,6 +820,7 @@ result <- get_amplicon_IDs_and_blocks(
   identity_amplicons = identity_amplicons,
   verbose = verbose
 )
+
 
 
 # ============================================================
