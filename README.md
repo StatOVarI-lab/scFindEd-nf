@@ -148,6 +148,17 @@ Input reads should follow a paired-end naming pattern such as:
 The pipeline expects a glob pattern such as:
 `data/*_R{1,2}_*.fastq`
 
+## HDR boundary handling
+
+If an experiment includes HDR templates, the workflow checks where each HDR matches its amplicon.
+
+Sometimes an HDR can extend slightly beyond the end of the amplicon sequence. In that case, the workflow uses only the part of the HDR that overlaps the amplicon and continues the analysis.
+
+A warning is printed so the affected SNP and amplicon can be reviewed.
+
+The part of the HDR outside the amplicon is not analysed.
+
+
 ## Output
 Results are written to the directory specified by `--outdir`.
 
