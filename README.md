@@ -148,15 +148,33 @@ Input reads should follow a paired-end naming pattern such as:
 The pipeline expects a glob pattern such as:
 `data/*_R{1,2}_*.fastq`
 
-## HDR boundary handling
+## Edit Template boundary handling
 
-If an experiment includes HDR templates, the workflow checks where each HDR matches its amplicon.
+For the edit templates in the experiment (for example this can be an HDR in some experiments), the workflow checks where each edit matches its amplicon.
 
-Sometimes an HDR can extend slightly beyond the end of the amplicon sequence. In that case, the workflow uses only the part of the HDR that overlaps the amplicon and continues the analysis.
+Sometimes an edit template can extend slightly beyond the end of the amplicon sequence. In that case, the workflow uses only the part of the edit that overlaps the amplicon and continues the analysis.
 
 A warning is printed so the affected SNP and amplicon can be reviewed.
 
-The part of the HDR outside the amplicon is not analysed.
+The part of the edit template outside the amplicon is not analysed.
+
+```
+                 AMPLICON
+        "What region did we sequence?"
+                     |
+                     |
+         ------------+------------
+         |                       |
+         v                       v
+   EDIT TEMPLATE            SEQUENCING READS
+"What edit did we       "What sequence did we
+ intend to make?"          actually observe?"
+         |                       |
+         ------------+------------
+                     |
+                     v
+              compare changes
+```
 
 
 ## Output
