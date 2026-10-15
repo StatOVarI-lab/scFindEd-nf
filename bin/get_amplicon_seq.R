@@ -54,8 +54,15 @@ get_amplicon_sequences <- function(
   #
   # Identity amplicons are excluded BY ID.
   # Their position in the CSV does not matter.
+  # If amplicon_seq is not empty/NA, assume an amplicon sequence
+  # is already present and do not fetch
   # ---------------------------------------------------------
-  fetch_rows <- !design_summary[[amplicon_id_col]] %in% identity_amplicons
+  amplicon_seq_col <- "amplicon_seq"
+
+  fetch_ids  <- design_summary[[amplicon_id_col]]
+  fetch_seqs <- design_summary[[amplicon_seq_col]]
+  fetch_rows <- !fetch_ids %in% identity_amplicons &
+    (is.na(fetch_seqs) | !nzchar(fetch_seqs))
 
   temp_design_summary <- design_summary[fetch_rows, ]
 
