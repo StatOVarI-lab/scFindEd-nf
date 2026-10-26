@@ -17,7 +17,7 @@ process REPORT_identity_AMPLICON {
     output:
     tuple val(sample_id),
           val(amp_id),
-          path("${sample_id}_${amp_id}_identity_reads.tsv.gz")
+          path("${sample_id}_${amp_id}_reads.tsv.gz")
 
     script:
     """
@@ -28,10 +28,10 @@ process REPORT_identity_AMPLICON {
         "${amp_id}" \
         "${amplicon_tsv}" \
         "${barcodes_readnames}" \
-        "${sample_id}_${amp_id}_identity_reads.tsv"
+        "${sample_id}_${amp_id}_reads.tsv"
 
-    gzip -f "${sample_id}_${amp_id}_identity_reads.tsv"
+    gzip -f "${sample_id}_${amp_id}_reads.tsv"
 
-    test -s "${sample_id}_${amp_id}_identity_reads.tsv.gz"
+    test -s "${sample_id}_${amp_id}_reads.tsv.gz"
     """
 }
