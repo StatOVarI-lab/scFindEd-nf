@@ -72,9 +72,9 @@ workflow {
     /*
      * Input channels
      */
-    design_ch = Channel.fromPath(params.design)
+    design_ch = Channel.fromPath(params.design, checkIfExists: true)
 
-    snp_info_ch = Channel.fromPath(params.snp_info)
+    snp_info_ch = Channel.fromPath(params.snp_info, checkIfExists: true)
 
 
     /*
@@ -108,8 +108,8 @@ workflow {
     /*
      * Build reference from the full design CSV
      */
-    def (ref_bundle_ch, ref_dict_ch) = BUILD_REFERENCE(
-        design_with_seq_ch
+    (ref_bundle_ch, ref_dict_ch) = BUILD_REFERENCE(
+    design_with_seq_ch
     )
 
 
@@ -162,7 +162,8 @@ workflow {
      */
     reads_ch = Channel.fromFilePairs(
         params.reads,
-        flat: true
+        flat: true,
+        checkIfExists: true
     )
 
 
@@ -198,10 +199,13 @@ workflow {
 
     /*
      * Align reads
-     */
+      * .first() converts the single reference bundle into a
+      * reusable value channel so the same reference is supplied
+      * to every FASTQ pair.
+    */
     bam_ch = ALIGN_BWA_MEM(
         reads_ch,
-        ref_bundle_ch
+        ref_bundle_ch.first()
     )
 
 
