@@ -11,8 +11,10 @@ include { EXTRACT_AMPLICON_TSV }      from './modules/extract_amplicon_tsv'
 include { EXTRACT_READNAMES }         from './modules/extract_readnames'
 include { EXTRACT_READ_MUTATION }     from './modules/extract_read_mutation'
 include { REPORT_identity_AMPLICON }  from './modules/report_identity_amplicon'
-include { FASTQC }                    from './modules/fastqc'
 include { MULTIQC }                   from './modules/multiqc'
+include { FASTP }                     from './modules/fastp'
+include { FASTQC_RAW }                from './modules/fastqc'
+include { FASTQC_TRIMMED }            from './modules/fastqc2'
 
 
 workflow {
@@ -167,26 +169,57 @@ workflow {
     )
 
 
-    FASTQC(reads_ch)
+    /*
+     * QC raw reads
+     */
+    FASTQC_RAW(
+        reads_ch
+    )
 
-    fastqc_zip_ch = FASTQC.out.zip.collect()
 
-    MULTIQC(fastqc_zip_ch)
+    /*
+     * Trim low-quality 3' ends
+     */
+    FASTP(
+       reads_ch
+   )
+
+    trimmed_reads_ch = FASTP.out.reads
+
+
+    /*
+     * QC trimmed reads
+     */
+     FASTQC_TRIMMED(
+        trimmed_reads_ch
+   )
+
+
+    /*
+     * Combine raw + trimmed FastQC results
+     */
+      fastqc_zip_ch = FASTQC_RAW.out.zip
+         .mix(FASTQC_TRIMMED.out.zip)
+         .collect()
+
+     MULTIQC(
+       fastqc_zip_ch
+    )
 
 
     /*
      * Extract R1 only for read-name / barcode extraction
      */
-    r1_ch = reads_ch.map {
-        sample_id,
-        r1,
-        r2 ->
+    r1_ch = trimmed_reads_ch.map {
+    sample_id,
+    r1,
+    r2 ->
 
-        tuple(
-            sample_id,
-            r1
-        )
-    }
+    tuple(
+        sample_id,
+        r1
+    )
+}
 
 
     /*
@@ -204,8 +237,8 @@ workflow {
       * to every FASTQ pair.
     */
     bam_ch = ALIGN_BWA_MEM(
-        reads_ch,
-        ref_bundle_ch.first()
+    trimmed_reads_ch,
+    ref_bundle_ch.first()
     )
 
 

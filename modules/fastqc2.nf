@@ -1,0 +1,25 @@
+process FASTQC_TRIMMED {
+
+    tag "${sample_id}"
+
+    publishDir "${params.outdir}/fastqc/trimmed", mode: 'copy'
+
+    conda "$projectDir/envs/fastqc.yml"
+
+    cpus 2
+
+    input:
+    tuple val(sample_id), path(r1), path(r2)
+
+    output:
+    path "*_fastqc.html", emit: html
+    path "*_fastqc.zip",  emit: zip
+
+    script:
+    """
+    fastqc \
+        --threads ${task.cpus} \
+        ${r1} \
+        ${r2}
+    """
+}

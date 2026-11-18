@@ -1,8 +1,8 @@
-process FASTQC {
+process FASTQC_RAW {
 
     tag "${sample_id}"
 
-    publishDir "${params.outdir}/fastqc", mode: 'copy'
+    publishDir "${params.outdir}/fastqc/raw", mode: 'copy'
 
     conda "$projectDir/envs/fastqc.yml"
 
