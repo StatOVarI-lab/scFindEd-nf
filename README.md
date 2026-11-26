@@ -360,6 +360,18 @@ The mutation-evidence step starts from grouped fragment patterns, where each row
 ## Pipeline Reports
 The pipeline does NOT automatically generates execution reports. 
 
+## Conda environment troubleshooting
+
+The workflow uses process-specific Conda environments defined in `envs/*.yml`. Environment creation can occasionally fail because package availability differs between operating systems, architectures and Conda/Bioconda package versions.
+
+Common fixes include:
+
+- remove the failed cached environment under `work/conda/` and rerun.
+- recreate the environment manually from the corresponding YAML file.
+- check that the Conda channels and package versions are compatible with the platform.
+- update or pin problematic package versions, particularly R/Bioconductor dependencies.
+- rerun Nextflow with `-resume` once the environment issue is resolved.
+
 ## Development Notes
 The pipeline is implemented in Nextflow DSL2.
 
